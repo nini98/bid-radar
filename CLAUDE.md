@@ -44,6 +44,7 @@ bid-radar/
 3. **AI Worker는 상태 변경, 저장, 비즈니스 로직을 수행하지 않는다**
 4. **모든 API 응답은 공통 Wrapper를 사용한다** — `{ header: { resultCode, resultMessage }, data }`
 5. **설계 문서 없이 도메인 구조를 임의로 변경하지 않는다**
+6. **main 브랜치에 `git push --force`를 실행하지 않는다**
 
 ---
 
