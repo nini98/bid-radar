@@ -1,0 +1,37 @@
+# Claude Code
+.claude/settings.local.json
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Java / Spring Boot
+backend/target/
+backend/.gradle/
+backend/build/
+backend/*.jar
+backend/*.war
+backend/.mvn/
+backend/mvnw
+backend/gradlew
+
+# Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+
+# AI Worker
+ai-worker/__pycache__/
+ai-worker/.venv/
+ai-worker/*.pyc
+ai-worker/.pytest_cache/
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
