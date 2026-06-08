@@ -8,7 +8,7 @@
 
 | 파트 | 기술 |
 |---|---|
-| Backend | Spring Boot, Spring Scheduler, Spring Data JPA, PostgreSQL |
+| Backend | Java 21, Spring Boot 3.x, Spring Scheduler, Spring Data JPA, QueryDSL, PostgreSQL, Flyway |
 | AI Worker | Python, FastAPI, pdfplumber, hwp5, Claude/OpenAI API |
 | Frontend | React, Vite |
 | Infra | AWS EC2, RDS, S3, Docker, Docker Compose |
