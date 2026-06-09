@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16
+    container_name: bidradar-postgres
+    ports:
+      - "5433:5432"
+    environment:
+      POSTGRES_DB: ${DB_NAME:-bidradar}
+      POSTGRES_USER: ${DB_USERNAME:-bidradar}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-bidradar}
+    volumes:
+      - bidradar-postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME:-bidradar} -d ${DB_NAME:-bidradar}" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  bidradar-postgres-data:
