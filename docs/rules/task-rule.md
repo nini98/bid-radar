@@ -76,6 +76,8 @@ Task 파일 작성 시 작업 내용에 맞는 Rule만 선택한다.
 8. `Done Condition`을 모두 충족했는지 확인한다.
 9. `docs/rules/self-review-rule.md`를 수행한다.
 10. 파트별 Review Rule을 수행한다.
+11. Task 파일의 `Done Condition`과 `작업 항목`을 모두 `[x]`로 체크한다.
+12. 커밋한다.
     - Spring Boot → `docs/rules/springboot/springboot-review-rule.md`
     - AI Worker → `docs/rules/ai-worker/ai-worker-review-rule.md`
     - Frontend → `docs/rules/frontend/frontend-review-rule.md`
