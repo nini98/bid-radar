@@ -22,10 +22,10 @@ Spring Boot
 
 ## Done Condition
 
-- [ ] Flyway 마이그레이션 실행 시 대상 테이블이 모두 정상 생성된다
-- [ ] 인덱스가 정상 생성된다
-- [ ] `ddl-auto: validate` 상태에서 앱이 정상 기동된다
-- [ ] JPA 엔티티와 DB 테이블 컬럼이 일치한다
+- [x] Flyway 마이그레이션 실행 시 대상 테이블이 모두 정상 생성된다
+- [x] 인덱스가 정상 생성된다
+- [x] `ddl-auto: validate` 상태에서 앱이 정상 기동된다
+- [x] JPA 엔티티와 DB 테이블 컬럼이 일치한다
 
 ---
 
@@ -40,19 +40,19 @@ Spring Boot
 
 ## 작업 항목
 
-- [ ] `V2__create_users.sql` 작성
+- [x] `V2__create_users.sql` 작성
   - users 테이블 (id, email, password_hash, name, role, is_active, last_login_at, created_at, updated_at)
   - email UNIQUE 제약
-- [ ] `V3__create_bid_notices.sql` 작성
+- [x] `V3__create_bid_notices.sql` 작성
   - bid_notices 테이블 (전체 컬럼)
   - 인덱스: external_notice_id(UNIQUE), bid_deadline, published_at, status, agency, region
-- [ ] `V4__create_bid_attachments.sql` 작성
+- [x] `V4__create_bid_attachments.sql` 작성
   - bid_attachments 테이블
   - bid_notice_id FK
-- [ ] `V5__create_favorites.sql` 작성
+- [x] `V5__create_favorites.sql` 작성
   - favorites 테이블
   - UNIQUE: (user_id, bid_notice_id)
-- [ ] `User` JPA 엔티티 작성
-- [ ] `BidNotice` JPA 엔티티 작성
-- [ ] `BidAttachment` JPA 엔티티 작성
-- [ ] `Favorite` JPA 엔티티 작성
+- [x] `User` JPA 엔티티 작성
+- [x] `BidNotice` JPA 엔티티 작성
+- [x] `BidAttachment` JPA 엔티티 작성
+- [x] `Favorite` JPA 엔티티 작성
