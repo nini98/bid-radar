@@ -33,11 +33,13 @@
 ## 4. JPA 매핑 규칙
 - 모든 엔티티는 `@Entity`와 `@Table(name = ...)`를 명시한다.
 - 기본 키는 공통 베이스 엔티티에서 관리하고 외부에서 임의 변경하지 못하게 한다.
+- 기본 키 전략은 `GenerationType.IDENTITY`를 사용한다 (PostgreSQL BIGSERIAL 매핑).
 - 컬럼은 `@Column`으로 이름과 제약을 명시한다.
 - enum은 반드시 `@Enumerated(EnumType.STRING)`을 사용한다.
 - 감사 컬럼은 공통 베이스 엔티티에서 관리한다.
 - DB가 계산하거나 트리거로 관리하는 컬럼은 `insertable = false, updatable = false`로 읽기 전용 매핑한다.
 - 값 객체를 엔티티에 포함할 때는 `@Embeddable`, `@Embedded` 또는 컨버터 등 명시적 매핑을 사용한다.
+- JSONB 컬럼은 `String` 타입에 `@Column(columnDefinition = "jsonb")`로 매핑한다.
 
 ## 5. 연관관계 규칙
 - 연관관계는 필요한 최소 범위만 매핑한다.
@@ -58,6 +60,17 @@
 - Response DTO는 엔티티 전체를 그대로 노출하지 않고 필요한 값만 선택한다.
 - 엔티티 내부에 API 응답 생성 로직을 넣지 않는다.
 
+## 9. 공통 컬럼 정책
+- `id`: 모든 테이블에 포함한다. BIGSERIAL PK, `GenerationType.IDENTITY`로 매핑한다.
+- `created_at`: 모든 테이블에 포함한다.
+- `updated_at`: 생성 후 상태 변경이 발생하는 테이블에만 포함한다. 생성 후 변경되지 않는 테이블(예: favorites 같은 단순 연결 테이블)은 제외한다.
+- 베이스 엔티티는 `updated_at` 포함 여부에 따라 구분한다. 필요 시 `created_at`만 있는 별도 베이스 엔티티를 만든다.
+
+## 10. FK cascade 정책
+- DB FK constraint는 기본 `NO ACTION`으로 설정한다. `CASCADE DELETE`, `SET NULL`은 명시적 의도가 있는 경우에만 사용한다.
+- JPA `cascade` 옵션은 기본 설정하지 않는다. 필요한 경우 사용 이유를 주석으로 명시한다.
+- `orphanRemoval`은 기본 `false`로 둔다. 부모 삭제 시 자식을 함께 삭제하는 것이 명확히 의도된 경우에만 `true`로 설정한다.
+
 ## 7. 금지사항
 - 엔티티에 `@Data` (Lombok) 또는 equals/hashCode를 모든 필드로 생성하는 행위
 - enum을 `ORDINAL`로 저장하는 행위
@@ -72,6 +85,8 @@
 
 ## 8. 체크리스트
 - 엔티티가 공통 베이스 엔티티를 통해 식별자와 감사 컬럼을 관리하는가?
+- 테이블 성격에 따라 `updated_at` 포함 여부가 맞게 결정되었는가?
+- FK cascade 정책을 따르는가? (DB: NO ACTION, JPA: 기본 미설정)
 - JPA용 무인자 생성자가 `PROTECTED`로 제한되어 있는가?
 - 상태 변경이 목적 있는 메서드로 표현되는가?
 - 상태 전이 메서드가 재처리 금지 규칙을 검증하는가?
