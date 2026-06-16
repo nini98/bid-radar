@@ -5,8 +5,9 @@ import jakarta.persistence.*;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Getter
@@ -70,6 +71,7 @@ public class BidNotice extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private BidStatus status;
 
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "raw_data", columnDefinition = "jsonb")
     private String rawData;
 
@@ -82,6 +84,28 @@ public class BidNotice extends BaseEntity {
         notice.source = source;
         notice.title = title;
         notice.status = status;
+        notice.collectedAt = LocalDateTime.now();
+        return notice;
+    }
+
+    public static BidNotice create(com.bidradar.bid.service.command.BidNoticeCreateCommand cmd) {
+        BidNotice notice = new BidNotice();
+        notice.externalNoticeId = cmd.externalNoticeId();
+        notice.source = cmd.source();
+        notice.title = cmd.title();
+        notice.status = BidStatus.OPEN;
+        notice.agency = cmd.agency();
+        notice.budget = cmd.budget();
+        notice.region = cmd.region();
+        notice.bidType = cmd.bidType();
+        notice.contractType = cmd.contractType();
+        notice.industryRestriction = cmd.industryRestriction();
+        notice.noticeUrl = cmd.noticeUrl();
+        notice.publishedAt = cmd.publishedAt();
+        notice.documentDeadline = cmd.documentDeadline();
+        notice.bidDeadline = cmd.bidDeadline();
+        notice.openAt = cmd.openAt();
+        notice.rawData = cmd.rawData();
         notice.collectedAt = LocalDateTime.now();
         return notice;
     }

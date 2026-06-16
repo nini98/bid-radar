@@ -8,6 +8,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 @Setter
 @ConfigurationProperties(prefix = "app.g2b")
 public class G2bProperties {
+    private String baseUrl = "https://apis.data.go.kr/1230000/ad/BidPublicInfoService/";
     private String serviceKey = "";
     private int pageSize = 100;
 }
