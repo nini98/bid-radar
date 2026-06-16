@@ -39,7 +39,7 @@
 - 감사 컬럼은 공통 베이스 엔티티에서 관리한다.
 - DB가 계산하거나 트리거로 관리하는 컬럼은 `insertable = false, updatable = false`로 읽기 전용 매핑한다.
 - 값 객체를 엔티티에 포함할 때는 `@Embeddable`, `@Embedded` 또는 컨버터 등 명시적 매핑을 사용한다.
-- JSONB 컬럼은 `String` 타입에 `@Column(columnDefinition = "jsonb")`로 매핑한다.
+- JSONB 컬럼은 `String` 타입에 `@JdbcTypeCode(SqlTypes.JSON)`과 `@Column(columnDefinition = "jsonb")`를 함께 선언한다. (`postgres-rule.md` 참조)
 
 ## 5. 연관관계 규칙
 - 연관관계는 필요한 최소 범위만 매핑한다.

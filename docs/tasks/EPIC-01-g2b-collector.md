@@ -25,11 +25,11 @@ Spring Boot
 
 ## Done Condition
 
-- [ ] 스케줄러 실행 시 나라장터 API에서 공고 목록이 수집된다
-- [ ] 수집된 공고가 `bid_notices` 테이블에 저장된다
-- [ ] 중복 공고(`external_notice_id` 기준)는 저장하지 않고 스킵된다
-- [ ] 첨부파일 정보가 `bid_attachments` 테이블에 저장된다
-- [ ] API 호출 실패 시 에러 로그가 기록되고 앱이 중단되지 않는다
+- [x] 스케줄러 실행 시 나라장터 API에서 공고 목록이 수집된다
+- [x] 수집된 공고가 `bid_notices` 테이블에 저장된다
+- [x] 중복 공고(`external_notice_id` 기준)는 저장하지 않고 스킵된다
+- [x] 첨부파일 정보가 `bid_attachments` 테이블에 저장된다
+- [x] API 호출 실패 시 에러 로그가 기록되고 앱이 중단되지 않는다
 
 ---
 
@@ -45,18 +45,18 @@ Spring Boot
 
 ## 작업 항목
 
-- [ ] `G2bProperties` 설정 클래스 구현 (`app.g2b.*` prefix)
+- [x] `G2bProperties` 설정 클래스 구현 (`app.g2b.*` prefix)
   - serviceKey, baseUrl, pageSize 등
-- [ ] `G2bApiClient` 구현 (RestClient)
+- [x] `G2bApiClient` 구현 (RestClient)
   - 입찰 공고 목록 조회 호출
   - 응답 파싱
-- [ ] G2B API 응답 DTO 작성 (`G2bNoticeResponse`, `G2bAttachmentResponse`)
-- [ ] `BidNoticeRepository` 구현
+- [x] G2B API 응답 DTO 작성 (`G2bNoticeItem`)
+- [x] `BidNoticeRepository` 구현
   - `existsByExternalNoticeId` (중복 체크)
-- [ ] `BidAttachmentRepository` 구현
-- [ ] `BidCollectorService` 구현
+- [x] `BidAttachmentRepository` 구현
+- [x] `BidCollectorService` 구현
   - API 호출 → DTO 매핑 → 중복 제거 → 저장
   - 트랜잭션 범위: 공고 1건 단위
-- [ ] `BidCollectScheduler` 구현
+- [x] `BidCollectScheduler` 구현
   - `@Scheduled` cron 설정 (매일 오전 수집)
   - 실패 시 에러 로그 기록, 다음 실행에 영향 없음
