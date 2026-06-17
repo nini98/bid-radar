@@ -62,9 +62,9 @@ Mapper 테스트는 모든 mapper에 대해 기본적으로 작성하지 않는�
 - 단순 필드 복사만 수행하는 경우
 - 상위 Service, Controller, Repository 테스트에서 충분히 간접 검증되는 경우
 
-### 3-2. 통합 테스트
+### 3-2. DB 통합 테스트
 
-다음 대상은 통합 테스트가 필요할 수 있다.
+다음 대상은 DB 통합 테스트를 작성한다.
 
 - JPA Repository
 - QueryDSL 기반 조회
@@ -74,13 +74,33 @@ Mapper 테스트는 모든 mapper에 대해 기본적으로 작성하지 않는�
 
 규칙:
 
+- `@DataJpaTest`를 기본으로 사용한다. JPA 슬라이스만 올라오므로 `@SpringBootTest`보다 빠르다.
+- `@DataJpaTest`는 기본적으로 datasource를 H2로 교체한다. PostgreSQL 전용 기능(JSONB 등)을 사용하는 경우 `@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)`을 함께 선언해 실제 DB를 사용한다.
+- Flyway 마이그레이션이 반영된 실제 스키마를 기준으로 검증한다.
 - DB 조회/저장 결과를 실제로 검증해야 할 때 사용한다.
 - Mock으로 충분한 로직에는 통합 테스트를 남용하지 않는다.
 
-### 3-3. 애플리케이션 부팅 테스트
+### 3-3. HTTP 클라이언트 통합 테스트
+
+외부 API를 호출하는 클라이언트(RestClient, WebClient 등)는 WireMock으로 HTTP 계층을 제어해 테스트한다.
+
+검증 대상:
+
+- URL 조합 및 쿼리 파라미터 구성
+- 응답 JSON 파싱 및 DTO 매핑
+- 페이지네이션 동작
+- API 오류 응답 처리
+
+규칙:
+
+- 실제 외부 API를 호출하지 않는다. WireMock이 고정 응답을 반환한다.
+- HTTP 클라이언트 테스트는 DB가 필요 없으므로 `@SpringBootTest` 없이 작성한다.
+
+### 3-4. 애플리케이션 부팅 테스트
 
 - `@SpringBootTest` 기반 `contextLoads` 테스트는 최소 수준으로 유지한다.
 - 목적은 상세 기능 검증이 아니라 기본 부팅 가능 여부 확인이다.
+- 단일 계층(DB 또는 HTTP 클라이언트)만 검증하는 용도로 `@SpringBootTest`를 쓰지 않는다. `@DataJpaTest` 또는 WireMock 기반 테스트로 대체한다.
 
 ### 3-4. 웹 슬라이스 테스트
 
@@ -134,17 +154,18 @@ PR 또는 머지 전에는 최소 `./gradlew test`를 실행한다.
 
 ## 7. JPA 및 Spring 통합 테스트 규칙
 
-- JPA 매핑, 실제 쿼리, QueryDSL 조회와 projection 결과는 통합 테스트로 검증한다.
+- JPA 매핑, 실제 쿼리, QueryDSL 조회와 projection 결과는 `@DataJpaTest`로 검증한다. PostgreSQL 전용 기능을 쓰는 경우 `@AutoConfigureTestDatabase(replace = NONE)`을 함께 선언한다.
 - Entity 연관관계, 저장/조회 결과, 제약 조건은 Mock 기반 단위 테스트로 대체하지 않는다.
 - DB 스키마 검증은 Flyway 마이그레이션이 반영된 상태를 기준으로 한다.
 - Spring 관련 테스트는 필요한 범위만 로드하고, 불필요한 전체 컨텍스트 로딩을 피한다.
+- `@SpringBootTest`는 전체 컨텍스트가 필요한 경우에만 사용한다. DB만 필요하면 `@DataJpaTest`, HTTP 클라이언트만 필요하면 WireMock 기반 테스트가 적합하다.
 
 ---
 
 ## 8. 금지 사항
 
 - 하나의 테스트에서 여러 분기와 여러 기대값을 동시에 검증하지 않는다.
-- 실제 네트워크, 외부 API, 외부 시스템에 의존하는 테스트를 작성하지 않는다.
+- 통제할 수 없는 외부 API, 제3자 서비스에 의존하는 테스트를 작성하지 않는다. (로컬 Docker로 직접 띄우는 DB, 캐시 등 테스트 환경에서 통제 가능한 인프라는 허용한다.)
 - 테스트 간 실행 순서에 의존하지 않는다.
 - 현재 시각, 랜덤 값에 따라 결과가 바뀌는 테스트를 작성하지 않는다.
 - 구현 세부사항만 검증하고 실제 결과를 검증하지 않는 테스트를 작성하지 않는다.
