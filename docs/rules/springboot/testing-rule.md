@@ -102,16 +102,77 @@ Mapper 테스트는 모든 mapper에 대해 기본적으로 작성하지 않는�
 - 목적은 상세 기능 검증이 아니라 기본 부팅 가능 여부 확인이다.
 - 단일 계층(DB 또는 HTTP 클라이언트)만 검증하는 용도로 `@SpringBootTest`를 쓰지 않는다. `@DataJpaTest` 또는 WireMock 기반 테스트로 대체한다.
 
-### 3-4. 웹 슬라이스 테스트
+### 3-5. 웹 슬라이스 테스트 (@WebMvcTest)
 
-웹 슬라이스 테스트는 HTTP 레이어 규칙 검증에만 사용한다.
+Controller 계층의 HTTP 규칙을 검증한다.
+비즈니스 로직은 Service 단위 테스트에서 검증하며, Controller 테스트는 HTTP 계층에만 집중한다.
 
-주요 검증 대상:
+검증 대상:
 
-- 요청 바인딩
-- Validation
-- 공통 응답 구조
-- 예외 발생 시 응답 형태
+- HTTP 메서드, URL 매핑 정확성
+- 요청 파라미터/바디 바인딩 동작
+- Bean Validation (`@Valid`, `@NotBlank` 등) 적용 여부
+- 공통 응답 Wrapper 구조 (`header.resultCode`, `header.resultMessage`, `data`)
+- 예외 발생 시 `GlobalExceptionHandler`를 통한 응답 형태
+- HTTP 상태 코드 (200, 400, 404, 500 등)
+
+검증하지 않는 것:
+
+- 비즈니스 로직 결과 (Service 단위 테스트 담당)
+- DB 쿼리 정확성 (DataJpaTest 담당)
+- 실제 데이터 저장/조회 여부
+
+#### 3-5-1. 기본 설정
+
+- `@WebMvcTest(XxxController.class)` 로 대상 Controller만 지정한다. 전체 Controller를 올리지 않는다.
+- Service 의존성은 `@MockitoBean`으로 대체한다.
+- `MockMvc`를 `@Autowired`로 주입받아 사용한다.
+
+```java
+@WebMvcTest(BidNoticeController.class)
+class BidNoticeControllerTest {
+
+    @Autowired
+    MockMvc mockMvc;
+
+    @MockitoBean
+    BidNoticeService bidNoticeService;
+}
+```
+
+#### 3-5-2. JSON 응답 검증
+
+- `jsonPath()`로 응답 필드를 검증한다.
+- 공통 응답 Wrapper 기준으로 `$.header.resultCode`, `$.data` 경로를 검증한다.
+
+```java
+mockMvc.perform(get("/api/bids/{id}", 1L))
+    .andExpect(status().isOk())
+    .andExpect(jsonPath("$.header.resultCode").value("0000"))
+    .andExpect(jsonPath("$.data.title").value("테스트 공고"));
+```
+
+- 목록 응답은 `$.data.content[0].필드명` 경로로 검증한다.
+- 에러 응답은 `$.header.resultCode`가 성공 코드가 아닌지, HTTP 상태 코드가 맞는지 검증한다.
+
+#### 3-5-3. Validation 검증
+
+- 필수 입력값 누락, 형식 오류 시 400 응답이 반환되는지 검증한다.
+- Validation 실패 응답도 공통 Wrapper 형식을 유지하는지 확인한다.
+
+```java
+mockMvc.perform(post("/api/bids")
+        .contentType(MediaType.APPLICATION_JSON)
+        .content("{}"))  // 필수값 누락
+    .andExpect(status().isBadRequest())
+    .andExpect(jsonPath("$.header.resultCode").value("4000"));
+```
+
+#### 3-5-4. Spring Security 처리
+
+- `@WebMvcTest`는 `SecurityFilterChain`을 함께 로드한다.
+- 인증이 필요한 엔드포인트 테스트 시 `@WithMockUser`를 사용한다.
+- 인증 구조 구현 전에는 테스트 전용 Security 설정 클래스를 만들어 `@Import`로 사용하거나, `@WebMvcTest`의 `excludeAutoConfiguration`으로 Security AutoConfiguration을 제외한다.
 
 ---
 
@@ -178,5 +239,7 @@ PR 또는 머지 전에는 최소 `./gradlew test`를 실행한다.
 - 작은 단위 테스트를 우선한다.
 - Service, Factory, Policy는 Mock 기반 단위 테스트로 검증한다.
 - Mapper는 정책, 검증, 계산이 있을 때만 선별적으로 테스트한다.
-- JPA, QueryDSL, projection 매핑은 통합 테스트로 검증한다.
+- Controller는 `@WebMvcTest`로 HTTP 계층만 검증하고, 비즈니스 로직은 Service 테스트에 맡긴다.
+- JPA, QueryDSL, projection 매핑은 `@DataJpaTest`로 검증한다.
+- 외부 HTTP API 클라이언트는 WireMock으로 검증한다.
 - 시간과 랜덤 값은 제어 가능해야 한다.
