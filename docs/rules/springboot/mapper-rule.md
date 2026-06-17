@@ -3,128 +3,149 @@
 ## 1. 문서 목적
 
 이 문서는 Java + Spring Boot 프로젝트에서 DTO와 내부 모델 사이의 변환 규칙을 정의한다.
-자동 매핑 도구가 아니라, 수동 변환 패턴을 기준으로 한다.
+기본 도구는 MapStruct이며, 복잡한 조건부 로직이 필요한 경우에만 수동 매퍼를 허용한다.
 
 ---
 
 ## 2. 핵심 패턴 요약
 
-- 자동 매핑 도구를 전제로 하지 않고, 수동 매핑을 기본으로 사용한다.
-- 입력 변환은 `Request/Query DTO → Criteria/내부 입력 모델` 같은 얇은 정규화에 집중한다.
-- 엔티티 생성은 mapper보다 Factory와 service 조합으로 처리한다.
-- 응답 변환은 엔티티 또는 읽기 모델을 `Response DTO`로 변환하는 전용 메서드에 둔다.
-- 검색 목록처럼 repository가 projection DTO를 직접 반환하는 경우 별도 응답 mapper를 생략할 수 있다.
-- service는 유스케이스 조합과 검증을 담당하고, mapper는 필드 이동과 형식 정규화만 담당한다.
+- 단순 필드 매핑은 MapStruct `@Mapper` 인터페이스를 기본으로 사용한다.
+- 조건부 로직, 집계, 반복 구조가 있는 변환은 수동 `@Component` 매퍼를 사용한다.
+- 엔티티 생성은 도메인 Factory 또는 service가 담당하고, 매퍼는 관여하지 않는다.
+- 응답 변환은 도메인별 MapStruct 매퍼 인터페이스에서 처리한다.
+- 입력 변환과 응답 변환은 매퍼를 분리한다.
+- service는 유스케이스 조합과 검증을 담당하고, 매퍼는 필드 이동과 형식 정규화만 담당한다.
 
 ---
 
-## 3. 기본 원칙
+## 3. MapStruct 기본 설정
 
-### 3-1. 수동 매핑을 기본으로 한다
+### 3-1. 의존성
 
-MapStruct 같은 자동 매핑 도구를 기본 전제로 두지 않는다.
-변환 규칙은 코드에서 명시적으로 드러나야 한다.
+```groovy
+def mapstructVersion = '1.6.3'
 
-허용 방식:
+implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
+annotationProcessor "org.projectlombok:lombok-mapstruct-binding:0.2.0"
+```
 
-- `@Component` mapper 클래스 (static 메서드 또는 인스턴스 메서드)
-- 도메인 클래스 내부 정적 팩토리 메서드 (`from(Entity entity)` 형태)
+Lombok과 MapStruct를 함께 쓸 때는 `lombok-mapstruct-binding`을 반드시 추가한다.
+어노테이션 프로세서 실행 순서를 보장하기 위해서다.
 
-즉, 매핑은 숨기지 말고 읽는 사람이 바로 추적할 수 있게 둔다.
+### 3-2. 매퍼 인터페이스 기본 형태
 
-### 3-2. 변환 방향과 위치를 섞지 않는다
+```java
+@Mapper(componentModel = "spring")
+public interface BidNoticeMapper {
+    BidSummaryResponse toSummary(BidNotice notice);
+    BidDetailResponse toDetail(BidNotice notice);
+}
+```
 
-하나의 mapper 또는 메서드는 변환 방향을 명확히 가져야 한다.
+- `componentModel = "spring"` 으로 Spring Bean으로 등록한다.
+- 필드명이 일치하면 MapStruct가 자동으로 매핑한다.
+- 필드명이 다르면 `@Mapping(source = "...", target = "...")` 으로 지정한다.
 
-- 입력 DTO → 내부 모델
-- 엔티티/읽기 모델 → 응답 DTO
+### 3-3. 필드명이 다를 때
 
-입력 변환과 응답 변환은 위치를 분리한다.
-범용 거대 mapper 하나에 모든 변환을 몰아넣지 않는다.
+```java
+@Mapper(componentModel = "spring")
+public interface BidNoticeMapper {
+
+    @Mapping(source = "externalNoticeId", target = "noticeId")
+    @Mapping(source = "agency", target = "organizationName")
+    BidSummaryResponse toSummary(BidNotice notice);
+}
+```
+
+### 3-4. 파생값 계산이 필요할 때
+
+DTO에 단순 파생값(D-Day 계산, 포맷 변환 등)이 필요하면 `@Named` default 메서드로 추가한다.
+
+```java
+@Mapper(componentModel = "spring")
+public interface BidNoticeMapper {
+
+    @Mapping(source = "bidDeadline", target = "dDay", qualifiedByName = "toDDay")
+    BidSummaryResponse toSummary(BidNotice notice);
+
+    @Named("toDDay")
+    default long toDDay(LocalDateTime deadline) {
+        return ChronoUnit.DAYS.between(LocalDate.now(), deadline.toLocalDate());
+    }
+}
+```
 
 ---
 
-## 4. 입력 DTO 변환 규칙
+## 4. 수동 매퍼를 사용하는 경우
 
-입력 DTO는 바로 repository나 domain에 넘기지 않고, 필요한 경우 내부 모델로 한 번 정규화한다.
+다음 조건 중 하나라도 해당하면 MapStruct 대신 수동 `@Component` 매퍼를 사용한다.
 
-입력 변환 mapper는 다음만 담당한다.
+- 조건부 null 체크와 필터링이 복잡하게 얽혀 있는 경우
+- 반복 구조(배열, 인덱스 기반 집계)를 처리해야 하는 경우
+- 연관된 여러 엔티티를 조합해 하나의 DTO를 구성하는 경우
 
-- 필드 이동
-- nullable 값 정리
-- 형식 수준 정규화
-- 내부 조회 기준명으로의 변환
-- 조회 경계값의 기술적 보정
+수동 매퍼는 `@Component`로 등록하고, 변환 방향을 메서드 이름에서 알 수 있게 작성한다.
 
-비즈니스 의미가 있는 검증은 service 또는 별도 검증 계층이 담당한다.
+```java
+@Component
+public class G2bNoticeMapper {
 
-### 4-1. Query DTO → Criteria
+    public List<BidAttachment> toAttachments(G2bNoticeItem item, BidNotice notice) {
+        // 조건부 로직, null 체크 등 MapStruct로 표현하기 어려운 경우
+    }
+}
+```
 
-검색 조건은 query DTO를 그대로 쓰지 않고 criteria로 변환한다.
+---
+
+## 5. 엔티티 생성과 매퍼의 경계
+
+엔티티 생성에 매퍼를 사용하지 않는다.
+
+다음 요소가 개입하면 엔티티 생성은 Factory 또는 service가 담당한다.
+
+- 연관 엔티티 참조 필요
+- 서버 생성 값 (collectedAt, status 초기값 등)
+- 도메인 규칙 적용 필요
+- 여러 입력 조합 필요
+
+즉, `BidNotice.create(command)` 같은 정적 팩토리 메서드는 매퍼가 아니라 도메인 생성 행위다.
+
+---
+
+## 6. 응답 변환 규칙
+
+응답 변환은 도메인별 MapStruct 매퍼 인터페이스에 둔다.
+repository가 projection DTO를 직접 반환하는 경우 별도 응답 변환을 생략할 수 있다.
+
+### 6-1. null 안전성
+
+- 필수값이 null로 들어오면 MapStruct는 그대로 null을 넣는다.
+- 필수값 누락을 즉시 드러내고 싶으면 `@AfterMapping`에서 `Objects.requireNonNull()`로 검증한다.
+
+### 6-2. 도메인 규칙 수준 계산
+
+단순 파생값은 매퍼 내부 `@Named` 메서드에서 계산할 수 있다.
+도메인 규칙 수준의 집계 로직은 매퍼에 두지 않고, service에서 계산한 값을 매퍼에 넘긴다.
+
+---
+
+## 7. 입력 변환 규칙 (Query → Criteria)
+
+검색 조건 Query DTO를 내부 Criteria로 변환할 때도 MapStruct를 사용할 수 있다.
 
 이 단계에서 허용되는 작업:
-- 기간 값 형식 정리
-- inclusive/exclusive 같은 조회 경계 보정
-- API 입력명을 내부 조회 기준명으로 치환
+- 필드 이름 치환
+- nullable 값 정리
+- 조회 경계값 보정
 
 이 단계에서 하지 않는 작업:
 - repository 호출
-- 엔티티 조회
 - 비즈니스 규칙 검증
 - 상태 판단
-
----
-
-## 5. 엔티티 생성과 mapper의 경계
-
-Request DTO를 곧바로 엔티티로 복사하는 방식을 기본 규칙으로 삼지 않는다.
-
-다음 요소가 개입하면 엔티티 생성은 mapper보다 Factory 또는 service가 담당한다.
-
-- 연관 엔티티 참조 필요
-- 기본 상태값 설정 필요
-- 서버 생성 값 필요
-- 도메인 규칙 적용 필요
-- 여러 입력을 조합해야 함
-
-즉, 엔티티 생성은 단순 필드 복사가 아니라 도메인 생성 행위이므로, mapper보다 Factory에 두는 것을 우선한다.
-
----
-
-## 6. 응답 DTO 변환 규칙
-
-응답 변환은 엔티티 또는 읽기 모델을 `Response DTO`로 바꾸는 전용 메서드에 둔다.
-단, repository가 읽기 전용 projection DTO를 직접 반환하는 경우에는 별도 응답 변환 단계를 두지 않을 수 있다.
-
-권장 방식:
-
-- Response DTO 내부 정적 팩토리 메서드: `BidSummaryResponse.from(bid)`
-- Mapper 클래스의 변환 메서드: `bidMapper.toSummary(bid)`
-
-즉, 응답 변환은 큰 mapper 한 개보다 작은 변환 메서드들의 조합으로 유지한다.
-
-### 6-1. null 안전성 규칙
-
-응답 변환 시 필수 값은 명시적으로 보장한다.
-필요하면 `Objects.requireNonNull()` 같은 방식으로 누락을 즉시 드러낸다.
-
-### 6-2. 계산 필드 규칙
-
-응답 DTO에 단순 파생값이 필요하면 변환 메서드 안에서 계산할 수 있다.
-단, 도메인 규칙 수준의 계산이나 집계 로직은 mapper에 두지 않는다.
-
----
-
-## 7. Projection DTO 규칙
-
-검색 목록이나 읽기 전용 조회는 repository가 projection DTO를 직접 반환할 수 있다.
-이 경우 service는 결과를 감싸거나 반환 형식만 조합하고, 별도 응답 mapper를 거치지 않을 수 있다.
-
-단, 다음을 기본 원칙으로 한다.
-
-- repository projection DTO와 API response DTO는 기본적으로 동일 클래스로 재사용하지 않는다.
-- projection DTO는 조회 최적화를 위한 내부 읽기 모델로 본다.
-- API 응답 스펙은 가능하면 별도 response DTO로 유지한다.
 
 ---
 
@@ -135,7 +156,7 @@ Request DTO를 곧바로 엔티티로 복사하는 방식을 기본 규칙으로
 - 입력 정규화
 - 조회 경계값 보정
 - 응답 DTO 조립
-- 작은 파생값 계산
+- 단순 파생값 계산 (`@Named` 메서드)
 
 ### 8-2. Service 또는 검증 계층 책임
 - repository 호출
@@ -146,20 +167,37 @@ Request DTO를 곧바로 엔티티로 복사하는 방식을 기본 규칙으로
 
 ---
 
-## 9. 금지 규칙
+## 9. Projection DTO 규칙
 
-- Request DTO를 그대로 엔티티에 복사하는 방식을 기본 규칙으로 삼지 않는다.
-- mapper 안에서 repository를 호출하지 않는다.
-- mapper 안에서 비즈니스 규칙 검증이나 상태 전이를 수행하지 않는다.
-- projection DTO를 API response DTO나 쓰기 유스케이스 입력 모델로 재사용하지 않는다.
-- 범용 거대 mapper 하나에 모든 변환을 몰아넣지 않는다.
+- repository가 projection DTO를 직접 반환하는 경우 별도 응답 변환을 거치지 않을 수 있다.
+- projection DTO와 API response DTO는 기본적으로 동일 클래스로 재사용하지 않는다.
+- projection DTO는 조회 최적화를 위한 내부 읽기 모델이다.
 
 ---
 
-## 10. 한 줄 요약
+## 10. 변환 방향 분리 원칙
 
-- 입력 DTO는 필요하면 criteria나 내부 입력 모델로 수동 변환한다.
-- 엔티티 생성은 mapper보다 Factory와 service 조합을 우선한다.
-- 응답 변환은 정적 팩토리 메서드 또는 작은 변환 메서드로 분리한다.
-- projection DTO와 API response DTO는 기본적으로 분리한다.
-- mapper는 변환과 정규화만, service는 조회와 검증과 조합만 담당한다.
+하나의 매퍼 인터페이스는 하나의 변환 방향을 담당한다.
+
+- 입력 변환 매퍼와 응답 변환 매퍼를 동일 인터페이스에 혼합하지 않는다.
+- 도메인별로 매퍼를 분리한다 (`BidNoticeMapper`, `UserMapper` 등).
+
+---
+
+## 11. 금지 규칙
+
+- MapStruct 없이 단순 필드 복사를 위한 수동 매퍼를 작성하지 않는다.
+- Response DTO에 `from(entity)` 정적 팩토리 메서드를 작성하지 않는다 (변환 로직이 DTO 안에 숨겨진다).
+- 매퍼 안에서 repository를 호출하지 않는다.
+- 매퍼 안에서 비즈니스 규칙 검증이나 상태 전이를 수행하지 않는다.
+- projection DTO를 API response DTO나 쓰기 유스케이스 입력으로 재사용하지 않는다.
+- 입력 변환과 응답 변환을 하나의 매퍼 인터페이스에 혼합하지 않는다.
+
+---
+
+## 12. 한 줄 요약
+
+- 단순 매핑은 MapStruct `@Mapper` 인터페이스, 복잡한 조건부 로직은 수동 `@Component` 매퍼.
+- 엔티티 생성은 Factory와 service가 담당한다.
+- 응답 변환은 도메인별 MapStruct 매퍼 인터페이스에서 처리한다.
+- 매퍼는 변환과 정규화만, service는 조회와 검증과 조합만 담당한다.

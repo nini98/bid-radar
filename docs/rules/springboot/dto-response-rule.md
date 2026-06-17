@@ -79,10 +79,34 @@
 
 ---
 
-## 8. 핵심 규칙
+## 8. 변환 방식 규칙
+
+Response DTO는 MapStruct `@Mapper` 인터페이스를 통해 변환한다. (`mapper-rule.md` 참조)
+
+- Response DTO 내부에 `from(entity)` 정적 팩토리 메서드를 작성하지 않는다.
+- 변환 로직은 매퍼 인터페이스에 두고, DTO는 순수 데이터 구조로 유지한다.
+- Java record 또는 Lombok `@Value`로 불변 DTO를 설계한다.
+
+```java
+// 금지: DTO 안에 변환 로직
+public record BidSummaryResponse(...) {
+    public static BidSummaryResponse from(BidNotice notice) { ... } // 금지
+}
+
+// 권장: MapStruct 매퍼에서 변환
+@Mapper(componentModel = "spring")
+public interface BidNoticeMapper {
+    BidSummaryResponse toSummary(BidNotice notice);
+}
+```
+
+---
+
+## 9. 핵심 규칙
 
 - 목록은 `Summary`, 상세는 `Detail`로 분리한다.
 - Summary에는 최소 정보만 담고, Detail에 상세 구성을 맡긴다.
 - Summary 안에는 Summary만 중첩한다.
 - 엔티티를 직접 응답으로 노출하지 않는다.
 - Response DTO는 API 응답 컨텍스트 기준으로 배치한다.
+- DTO는 순수 데이터 구조로 유지하고, 변환 로직은 MapStruct 매퍼에 둔다.
