@@ -92,6 +92,32 @@ class G2bApiClientTest {
     }
 
     @Test
+    @DisplayName("items 노드가 없으면 빈 목록을 반환한다")
+    void items_노드가_없으면_빈_목록_반환() {
+        wireMockServer.stubFor(get(urlPathMatching(".*getBidPblancListInfoCnstwk.*"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody(noItemsNodeResponse())));
+
+        List<G2bNoticeItem> items = client.fetchConstructionNotices(TEST_DATE);
+
+        assertThat(items).isEmpty();
+    }
+
+    @Test
+    @DisplayName("응답 JSON이 깨진 경우 빈 목록을 반환한다")
+    void 응답_JSON이_깨진_경우_빈_목록_반환() {
+        wireMockServer.stubFor(get(urlPathMatching(".*getBidPblancListInfoCnstwk.*"))
+                .willReturn(aResponse()
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("not a valid json {")));
+
+        List<G2bNoticeItem> items = client.fetchConstructionNotices(TEST_DATE);
+
+        assertThat(items).isEmpty();
+    }
+
+    @Test
     @DisplayName("총 건수보다 첫 페이지 결과가 적으면 다음 페이지를 이어서 호출한다")
     void 페이지네이션_다음_페이지_호출() {
         // 1페이지: totalCount=2, 결과 1건 → 2페이지 호출 필요
@@ -176,6 +202,17 @@ class G2bApiClientTest {
                   "response": {
                     "header": { "resultCode": "00", "resultMsg": "OK" },
                     "body": { "totalCount": 0 }
+                  }
+                }
+                """;
+    }
+
+    private String noItemsNodeResponse() {
+        return """
+                {
+                  "response": {
+                    "header": { "resultCode": "00", "resultMsg": "OK" },
+                    "body": { "totalCount": 1 }
                   }
                 }
                 """;
