@@ -5,6 +5,7 @@ plugins {
 }
 
 def querydslVersion = '5.1.0'
+def mapstructVersion = '1.6.3'
 
 group = 'com.bidradar'
 version = '0.0.1-SNAPSHOT'
@@ -28,6 +29,10 @@ dependencies {
 	compileOnly 'org.projectlombok:lombok'
 	runtimeOnly 'org.postgresql:postgresql'
 	annotationProcessor 'org.projectlombok:lombok'
+	annotationProcessor "org.projectlombok:lombok-mapstruct-binding:0.2.0"
+
+	implementation "org.mapstruct:mapstruct:${mapstructVersion}"
+	annotationProcessor "org.mapstruct:mapstruct-processor:${mapstructVersion}"
 
 	implementation "com.querydsl:querydsl-jpa:${querydslVersion}:jakarta"
 	annotationProcessor "com.querydsl:querydsl-apt:${querydslVersion}:jakarta"
