@@ -2,9 +2,6 @@ package com.bidradar.bid.infra.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
-import java.util.ArrayList;
-import java.util.List;
-
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record G2bNoticeItem(
         String bidNtceNo,
@@ -43,20 +40,4 @@ public record G2bNoticeItem(
         String ntceSpecFileNm8,
         String ntceSpecFileNm9,
         String ntceSpecFileNm10
-) {
-    public List<AttachmentEntry> attachments() {
-        List<AttachmentEntry> result = new ArrayList<>();
-        String[] urls = {ntceSpecDocUrl1, ntceSpecDocUrl2, ntceSpecDocUrl3, ntceSpecDocUrl4, ntceSpecDocUrl5,
-                ntceSpecDocUrl6, ntceSpecDocUrl7, ntceSpecDocUrl8, ntceSpecDocUrl9, ntceSpecDocUrl10};
-        String[] names = {ntceSpecFileNm1, ntceSpecFileNm2, ntceSpecFileNm3, ntceSpecFileNm4, ntceSpecFileNm5,
-                ntceSpecFileNm6, ntceSpecFileNm7, ntceSpecFileNm8, ntceSpecFileNm9, ntceSpecFileNm10};
-        for (int i = 0; i < urls.length; i++) {
-            if (urls[i] != null && !urls[i].isBlank() && names[i] != null && !names[i].isBlank()) {
-                result.add(new AttachmentEntry(names[i], urls[i]));
-            }
-        }
-        return result;
-    }
-
-    public record AttachmentEntry(String fileName, String downloadUrl) {}
-}
+) {}

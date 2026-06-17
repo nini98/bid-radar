@@ -58,7 +58,29 @@ restClient.get().uri(URI.create(url)).retrieve().body(String.class);
 
 ---
 
-## 5. 응답 스키마 실측 확인
+## 5. 외부 API 응답 DTO는 순수 데이터 record
+
+외부 API 응답을 매핑하는 DTO(`infra/dto/`)는 순수한 데이터 구조로만 유지한다.
+
+- 변환, 집계, 정규화 메서드를 두지 않는다.
+- 외부 API의 구조적 불편함을 해석하는 행위는 우리 코드의 책임이므로 Mapper에서 처리한다.
+
+```java
+// 금지 — DTO 안에 변환 로직
+public record G2bNoticeItem(...) {
+    public List<AttachmentEntry> attachments() { ... } // X
+}
+
+// 허용 — Mapper가 변환을 담당
+@Component
+public class G2bNoticeMapper {
+    public List<BidAttachment> toAttachments(G2bNoticeItem item, BidNotice notice) { ... }
+}
+```
+
+---
+
+## 6. 응답 스키마 실측 확인
 
 API 문서(특히 XML 기반 문서)의 응답 구조와 실제 JSON 응답이 다를 수 있다.
 

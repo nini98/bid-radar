@@ -29,6 +29,7 @@ public class BidNoticeProcessor {
     private final BidNoticeRepository bidNoticeRepository;
     private final BidAttachmentRepository bidAttachmentRepository;
     private final ObjectMapper objectMapper;
+    private final G2bNoticeMapper g2bNoticeMapper;
 
     @Transactional
     public boolean process(G2bNoticeItem item) {
@@ -39,9 +40,7 @@ public class BidNoticeProcessor {
         BidNotice notice = BidNotice.create(toCommand(item));
         bidNoticeRepository.save(notice);
 
-        List<BidAttachment> attachments = item.attachments().stream()
-                .map(a -> BidAttachment.create(notice, a.fileName(), a.downloadUrl()))
-                .toList();
+        List<BidAttachment> attachments = g2bNoticeMapper.toAttachments(item, notice);
         if (!attachments.isEmpty()) {
             bidAttachmentRepository.saveAll(attachments);
         }
