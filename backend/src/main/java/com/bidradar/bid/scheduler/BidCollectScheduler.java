@@ -15,7 +15,7 @@ public class BidCollectScheduler {
 
     private final BidCollectorService bidCollectorService;
 
-    @Scheduled(cron = "0 0 7 * * *")
+    @Scheduled(cron = "${app.g2b.cron}")
     public void collect() {
         LocalDate today = LocalDate.now();
         log.info("G2B 공고 수집 시작: date={}", today);

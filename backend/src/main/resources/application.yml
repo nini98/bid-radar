@@ -27,3 +27,4 @@ app:
     base-url: https://apis.data.go.kr/1230000/ad/BidPublicInfoService/
     service-key: ${G2B_SERVICE_KEY:}  # URL 인코딩 키(Encoding)를 사용
     page-size: 100
+    cron: "0 0 7 * * *"
