@@ -49,31 +49,40 @@ class BidNoticeProcessorTest {
     @Test
     @DisplayName("공고를 처리하면 DB에 저장된다")
     void 공고를_처리하면_DB에_저장된다() {
+        // given
         G2bNoticeItem item = createItem("20250001");
 
+        // when
         processor.process(item);
 
+        // then
         assertThat(bidNoticeRepository.count()).isEqualTo(1);
     }
 
     @Test
     @DisplayName("같은 공고를 두 번 처리해도 중복 저장되지 않는다")
     void 같은_공고를_두번_처리해도_중복저장되지않는다() {
+        // given
         G2bNoticeItem item = createItem("20250001");
 
+        // when
         processor.process(item);
         processor.process(item);
 
+        // then
         assertThat(bidNoticeRepository.count()).isEqualTo(1);
     }
 
     @Test
     @DisplayName("첨부파일이 있는 공고를 처리하면 첨부파일도 함께 저장된다")
     void 첨부파일이_있는_공고를_처리하면_첨부파일도_저장된다() {
+        // given
         G2bNoticeItem item = createItemWithAttachment("20250002");
 
+        // when
         processor.process(item);
 
+        // then
         assertThat(bidNoticeRepository.count()).isEqualTo(1);
         assertThat(bidAttachmentRepository.count()).isEqualTo(1);
     }
