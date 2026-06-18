@@ -75,7 +75,9 @@ Mapper 테스트는 모든 mapper에 대해 기본적으로 작성하지 않는�
 규칙:
 
 - `@DataJpaTest`를 기본으로 사용한다. JPA 슬라이스만 올라오므로 `@SpringBootTest`보다 빠르다.
-- `@DataJpaTest`는 기본적으로 datasource를 H2로 교체한다. PostgreSQL 전용 기능(JSONB 등)을 사용하는 경우 `@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)`을 함께 선언해 실제 DB를 사용한다.
+- DB 통합 테스트는 반드시 `IntegrationTestBase`를 상속해 Testcontainers 기반 PostgreSQL 컨테이너를 사용한다. 로컬 개발 DB나 CI 서버 DB에 직접 붙지 않는다.
+- `@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)`을 함께 선언해 Spring이 H2로 교체하지 않도록 한다. 이 선언은 `IntegrationTestBase`와 함께 쓰는 것이 전제다.
+- Testcontainers가 컨테이너 격리를 보장하므로 `@BeforeEach`에서 `deleteAll()`로 데이터를 정리하지 않는다. `@DataJpaTest`의 트랜잭션 롤백에 의존한다.
 - Flyway 마이그레이션이 반영된 실제 스키마를 기준으로 검증한다.
 - DB 조회/저장 결과를 실제로 검증해야 할 때 사용한다.
 - Mock으로 충분한 로직에는 통합 테스트를 남용하지 않는다.
@@ -222,7 +224,7 @@ PR 또는 머지 전에는 최소 `./gradlew test`를 실행한다.
 
 ## 7. JPA 및 Spring 통합 테스트 규칙
 
-- JPA 매핑, 실제 쿼리, QueryDSL 조회와 projection 결과는 `@DataJpaTest`로 검증한다. PostgreSQL 전용 기능을 쓰는 경우 `@AutoConfigureTestDatabase(replace = NONE)`을 함께 선언한다.
+- JPA 매핑, 실제 쿼리, QueryDSL 조회와 projection 결과는 `@DataJpaTest`로 검증한다. `IntegrationTestBase`를 상속해 Testcontainers PostgreSQL 위에서 실행한다.
 - Entity 연관관계, 저장/조회 결과, 제약 조건은 Mock 기반 단위 테스트로 대체하지 않는다.
 - DB 스키마 검증은 Flyway 마이그레이션이 반영된 상태를 기준으로 한다.
 - Spring 관련 테스트는 필요한 범위만 로드하고, 불필요한 전체 컨텍스트 로딩을 피한다.
@@ -235,6 +237,7 @@ PR 또는 머지 전에는 최소 `./gradlew test`를 실행한다.
 - 하나의 테스트에서 여러 분기와 여러 기대값을 동시에 검증하지 않는다.
 - 통제할 수 없는 외부 API, 제3자 서비스에 의존하는 테스트를 작성하지 않는다. (로컬 Docker로 직접 띄우는 DB, 캐시 등 테스트 환경에서 통제 가능한 인프라는 허용한다.)
 - 테스트 간 실행 순서에 의존하지 않는다.
+- DB 통합 테스트의 `@BeforeEach`에서 `deleteAll()`로 데이터를 초기화하지 않는다. Testcontainers 컨테이너 격리와 `@DataJpaTest` 트랜잭션 롤백이 이를 대체한다.
 - 현재 시각, 랜덤 값에 따라 결과가 바뀌는 테스트를 작성하지 않는다.
 - 구현 세부사항만 검증하고 실제 결과를 검증하지 않는 테스트를 작성하지 않는다.
 - Service 테스트에서 Repository/JPA의 실제 동작까지 함께 보장하려고 하지 않는다.
@@ -247,6 +250,6 @@ PR 또는 머지 전에는 최소 `./gradlew test`를 실행한다.
 - Service, Factory, Policy는 Mock 기반 단위 테스트로 검증한다.
 - Mapper는 정책, 검증, 계산이 있을 때만 선별적으로 테스트한다.
 - Controller는 `@WebMvcTest`로 HTTP 계층만 검증하고, 비즈니스 로직은 Service 테스트에 맡긴다.
-- JPA, QueryDSL, projection 매핑은 `@DataJpaTest`로 검증한다.
+- JPA, QueryDSL, projection 매핑은 `@DataJpaTest` + `IntegrationTestBase`로 검증한다.
 - 외부 HTTP API 클라이언트는 WireMock으로 검증한다.
 - 시간과 랜덤 값은 제어 가능해야 한다.
