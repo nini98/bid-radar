@@ -4,6 +4,7 @@ import com.bidradar.bid.infra.dto.G2bNoticeItem;
 import com.bidradar.bid.repository.BidAttachmentRepository;
 import com.bidradar.bid.repository.BidNoticeRepository;
 import com.bidradar.config.JpaConfig;
+import com.bidradar.support.IntegrationTestBase;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,12 +19,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
-// G2bApiClient 없이 Processor 계층만 올린다.
-// ObjectMapper는 DB 저장과 무관한 JSON 직렬화 용도이므로 Mock으로 대체한다.
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({BidNoticeProcessor.class, G2bNoticeMapper.class, JpaConfig.class})
-class BidNoticeProcessorTest {
+class BidNoticeProcessorTest extends IntegrationTestBase {
 
     @Autowired
     BidNoticeProcessor processor;
@@ -39,10 +38,6 @@ class BidNoticeProcessorTest {
 
     @BeforeEach
     void setUp() throws Exception {
-        // 이전 테스트 실행이나 애플리케이션 실행으로 쌓인 데이터 제거
-        // FK 제약 때문에 attachment 먼저 삭제
-        bidAttachmentRepository.deleteAll();
-        bidNoticeRepository.deleteAll();
         when(objectMapper.writeValueAsString(any())).thenReturn("{}");
     }
 
