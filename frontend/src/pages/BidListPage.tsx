@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useBidList } from '../hooks/useBidList';
+import { useMe, useLogout } from '../hooks/useAuth';
 import BidCard from '../components/bid/BidCard';
 import BidSearchBar from '../components/bid/BidSearchBar';
 import BidSummaryBar from '../components/bid/BidSummaryBar';
@@ -12,6 +13,9 @@ export default function BidListPage() {
   const [region, setRegion] = useState('');
   const [sort, setSort] = useState<BidSortType>('LATEST');
   const [page, setPage] = useState(0);
+
+  const { data: user } = useMe();
+  const { mutate: logout, isPending: isLoggingOut } = useLogout();
 
   const { data, isLoading, isError, error, refetch } = useBidList({
     keyword: keyword || undefined,
@@ -29,9 +33,23 @@ export default function BidListPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-4xl mx-auto px-4 py-6">
-        <h1 className="text-xl font-bold text-gray-900 mb-4">공고 목록</h1>
+      <header className="bg-white border-b border-gray-100 sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 h-12 flex items-center justify-between">
+          <span className="font-bold text-gray-900">Bid Radar</span>
+          <div className="flex items-center gap-3 text-sm text-gray-500">
+            {user && <span>{user.name}</span>}
+            <button
+              onClick={() => logout()}
+              disabled={isLoggingOut}
+              className="text-gray-400 hover:text-gray-700 disabled:opacity-50"
+            >
+              로그아웃
+            </button>
+          </div>
+        </div>
+      </header>
 
+      <div className="max-w-4xl mx-auto px-4 py-6">
         <BidSearchBar
           keyword={keyword}
           sort={sort}
