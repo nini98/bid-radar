@@ -1,5 +1,6 @@
 package com.bidradar.auth.infra;
 
+import com.bidradar.config.CookieProperties;
 import com.bidradar.config.JwtProperties;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletResponse;
@@ -14,6 +15,7 @@ public class CookieProvider {
     private static final String REFRESH_TOKEN = "REFRESH_TOKEN";
 
     private final JwtProperties jwtProperties;
+    private final CookieProperties cookieProperties;
 
     public void addAccessTokenCookie(HttpServletResponse response, String token) {
         response.addCookie(httpOnlyCookie(ACCESS_TOKEN, token,
@@ -33,7 +35,7 @@ public class CookieProvider {
     private Cookie httpOnlyCookie(String name, String value, int maxAge) {
         Cookie cookie = new Cookie(name, value);
         cookie.setHttpOnly(true);
-        cookie.setSecure(false);
+        cookie.setSecure(cookieProperties.isSecure());
         cookie.setPath("/");
         cookie.setMaxAge(maxAge);
         return cookie;

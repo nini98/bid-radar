@@ -26,6 +26,7 @@
 | `XSRF-TOKEN` | ✗ | FE가 읽어 X-XSRF-TOKEN 헤더에 추가 (CSRF 방어) |
 
 - `ACCESS_TOKEN`, `REFRESH_TOKEN`은 `HttpOnly`, `Secure`, `SameSite=Strict`로 설정한다.
+- `Secure` 플래그는 운영 환경에서 반드시 활성화한다. 로컬 개발 환경에서는 `app.cookie.secure=false` 환경 변수로 토글을 허용한다.
 - `XSRF-TOKEN`은 Spring Security 기본 Cookie 이름을 사용한다. FE가 JS로 읽을 수 있어야 하므로 HttpOnly를 적용하지 않는다.
 
 ---
