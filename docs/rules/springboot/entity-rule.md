@@ -60,18 +60,18 @@
 - Response DTO는 엔티티 전체를 그대로 노출하지 않고 필요한 값만 선택한다.
 - 엔티티 내부에 API 응답 생성 로직을 넣지 않는다.
 
-## 9. 공통 컬럼 정책
+## 7. 공통 컬럼 정책
 - `id`: 모든 테이블에 포함한다. BIGSERIAL PK, `GenerationType.IDENTITY`로 매핑한다.
 - `created_at`: 모든 테이블에 포함한다.
 - `updated_at`: 생성 후 상태 변경이 발생하는 테이블에만 포함한다. 생성 후 변경되지 않는 테이블(예: favorites 같은 단순 연결 테이블)은 제외한다.
 - 베이스 엔티티는 `updated_at` 포함 여부에 따라 구분한다. 필요 시 `created_at`만 있는 별도 베이스 엔티티를 만든다.
 
-## 10. FK cascade 정책
+## 8. FK cascade 정책
 - DB FK constraint는 기본 `NO ACTION`으로 설정한다. `CASCADE DELETE`, `SET NULL`은 명시적 의도가 있는 경우에만 사용한다.
 - JPA `cascade` 옵션은 기본 설정하지 않는다. 필요한 경우 사용 이유를 주석으로 명시한다.
 - `orphanRemoval`은 기본 `false`로 둔다. 부모 삭제 시 자식을 함께 삭제하는 것이 명확히 의도된 경우에만 `true`로 설정한다.
 
-## 7. 금지사항
+## 9. 금지사항
 - 엔티티에 `@Data` (Lombok) 또는 equals/hashCode를 모든 필드로 생성하는 행위
 - enum을 `ORDINAL`로 저장하는 행위
 - 엔티티를 Controller 응답으로 직접 반환하는 행위
@@ -83,7 +83,7 @@
 - 상태 전이 시 관련 감사 필드나 처리 필드를 누락한 채 상태값만 바꾸는 행위
 - `@ManyToMany`를 단순 편의만으로 직접 매핑하는 행위
 
-## 8. 체크리스트
+## 10. 체크리스트
 - 엔티티가 공통 베이스 엔티티를 통해 식별자와 감사 컬럼을 관리하는가?
 - 테이블 성격에 따라 `updated_at` 포함 여부가 맞게 결정되었는가?
 - FK cascade 정책을 따르는가? (DB: NO ACTION, JPA: 기본 미설정)
