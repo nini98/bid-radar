@@ -1,6 +1,6 @@
 package com.bidradar.bid.repository;
 
-import com.bidradar.bid.dto.request.BidSortType;
+import com.bidradar.bid.dto.query.BidSortType;
 
 public record BidSearchCondition(
         String keyword,

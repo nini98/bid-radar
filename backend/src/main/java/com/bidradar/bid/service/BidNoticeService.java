@@ -1,6 +1,6 @@
 package com.bidradar.bid.service;
 
-import com.bidradar.bid.dto.request.BidNoticeSearchRequest;
+import com.bidradar.bid.dto.query.BidNoticeSearchCondition;
 import com.bidradar.bid.dto.response.BidAttachmentResponse;
 import com.bidradar.bid.dto.response.BidListResponse;
 import com.bidradar.bid.dto.response.BidNoticeDetailResponse;
@@ -27,18 +27,18 @@ public class BidNoticeService {
     private final BidNoticeMapper bidNoticeMapper;
 
     @Transactional(readOnly = true)
-    public BidListResponse getList(BidNoticeSearchRequest request) {
-        BidSearchCondition condition = new BidSearchCondition(
-                request.keyword(),
-                request.region(),
-                request.budgetMin(),
-                request.budgetMax(),
-                request.deadlineDays(),
-                request.sort()
+    public BidListResponse getList(BidNoticeSearchCondition condition) {
+        BidSearchCondition searchCondition = new BidSearchCondition(
+                condition.keyword(),
+                condition.region(),
+                condition.budgetMin(),
+                condition.budgetMax(),
+                condition.deadlineDays(),
+                condition.sort()
         );
 
-        PageRequest pageable = PageRequest.of(request.page(), request.size());
-        Page<BidNoticeSummaryResponse> page = bidNoticeRepository.search(condition, pageable);
+        PageRequest pageable = PageRequest.of(condition.page(), condition.size());
+        Page<BidNoticeSummaryResponse> page = bidNoticeRepository.search(searchCondition, pageable);
 
         long todayNewCount = bidNoticeRepository.countTodayNew();
         long todayDeadlineCount = bidNoticeRepository.countTodayDeadline();

@@ -1,6 +1,6 @@
 package com.bidradar.bid.controller;
 
-import com.bidradar.bid.dto.request.BidNoticeSearchRequest;
+import com.bidradar.bid.dto.query.BidNoticeSearchCondition;
 import com.bidradar.bid.dto.response.BidListResponse;
 import com.bidradar.bid.dto.response.BidNoticeDetailResponse;
 import com.bidradar.bid.service.BidNoticeService;
@@ -16,8 +16,8 @@ public class BidNoticeController {
     private final BidNoticeService bidNoticeService;
 
     @GetMapping
-    public Response<BidListResponse> getList(@ModelAttribute BidNoticeSearchRequest request) {
-        return Response.success(bidNoticeService.getList(request));
+    public Response<BidListResponse> getList(@ModelAttribute BidNoticeSearchCondition condition) {
+        return Response.success(bidNoticeService.getList(condition));
     }
 
     @GetMapping("/{bidId}")

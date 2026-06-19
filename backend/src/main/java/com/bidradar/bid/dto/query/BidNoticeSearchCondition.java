@@ -1,6 +1,6 @@
-package com.bidradar.bid.dto.request;
+package com.bidradar.bid.dto.query;
 
-public record BidNoticeSearchRequest(
+public record BidNoticeSearchCondition(
         String keyword,
         String region,
         Long budgetMin,
@@ -10,7 +10,7 @@ public record BidNoticeSearchRequest(
         Integer page,
         Integer size
 ) {
-    public BidNoticeSearchRequest {
+    public BidNoticeSearchCondition {
         if (sort == null) sort = BidSortType.LATEST;
         if (page == null || page < 0) page = 0;
         if (size == null || size <= 0) size = 20;

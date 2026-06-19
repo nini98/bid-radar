@@ -2,7 +2,7 @@ package com.bidradar.bid.repository;
 
 import com.bidradar.bid.domain.BidStatus;
 import com.bidradar.bid.domain.QBidNotice;
-import com.bidradar.bid.dto.request.BidSortType;
+import com.bidradar.bid.dto.query.BidSortType;
 import com.bidradar.bid.dto.response.BidNoticeSummaryResponse;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
