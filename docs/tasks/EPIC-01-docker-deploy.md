@@ -26,7 +26,7 @@ GitHub push (main)
 [GitHub Actions]
   → docker build (backend, frontend)
   → ECR push
-  → SSM Run Command → EC2: docker pull + docker compose up -d
+  → SSM Run Command → EC2: docker pull + docker compose up -d (ec2-user로 실행)
 
 EC2 (private subnet, SSM 접속)
   → ECR에서 이미지 pull (VPC Endpoint 경유)
@@ -41,17 +41,17 @@ EC2 (private subnet, SSM 접속)
 
 ## Done Condition
 
-- [ ] GitHub Actions로 main push 시 ECR에 이미지가 자동 push된다
-- [ ] EC2에서 ECR 이미지를 pull해 컨테이너가 실행된다
-- [ ] 환경 변수가 EC2의 `.env.prod` 파일로 외부 주입된다
-- [ ] EC2에서 서비스가 정상 동작한다 (ALB 또는 포트포워딩으로 접근 확인)
+- [x] GitHub Actions로 main push 시 ECR에 이미지가 자동 push된다
+- [x] EC2에서 ECR 이미지를 pull해 컨테이너가 실행된다
+- [x] 환경 변수가 EC2의 `.env.prod` 파일로 외부 주입된다
+- [ ] EC2에서 서비스가 정상 동작한다 (ALB로 외부 접속 확인)
 - [ ] 공고 목록 화면이 배포 환경에서 정상 동작한다
 
 ---
 
 ## Out of Scope
 
-- HTTPS / SSL / ALB → Epic-4
+- HTTPS / SSL / ALB → 다음 작업
 - 모니터링 / 로그 수집 → Epic-4
 - Secrets Manager 연동 → Epic-4
 
@@ -63,16 +63,17 @@ EC2 (private subnet, SSM 접속)
 - [x] `backend/Dockerfile` 작성 (멀티스테이지 빌드)
 - [x] `frontend/Dockerfile` 작성 (빌드 + Nginx 서빙)
 - [x] `frontend/nginx.conf` 작성 (`/api/*` → backend 프록시)
+- [x] `infra/docker-compose.prod.yml` 작성 (ECR 이미지 방식)
 - [x] `.env.prod.example` 작성
-
-### 진행 중
-- [ ] `infra/docker-compose.prod.yml` 수정 — `build:` → `image:` (ECR URI)
-- [ ] GitHub Actions workflow 작성
+- [x] GitHub Actions workflow 작성 (`.github/workflows/deploy.yml`)
   - main push 트리거
   - backend/frontend 이미지 빌드 및 ECR push
-  - SSM Run Command로 EC2 배포
-- [ ] GitHub Secrets 등록 (AWS 자격증명)
-- [ ] EC2 초기 세팅 (SSM 접속)
-  - `/app/.env.prod` 파일 생성
-  - `/app/docker-compose.prod.yml` 파일 업로드
-- [ ] 첫 배포 동작 확인
+  - SSM Run Command로 EC2 배포 (ec2-user로 실행)
+- [x] GitHub Secrets 등록 (AWS_ACCESS_KEY_ID, AWS_SECRET_ACCESS_KEY, EC2_INSTANCE_ID)
+- [x] IAM 사용자 생성 (bid-radar-github-actions, ECR + SSM 권한)
+- [x] EC2 초기 세팅 (SSM 접속, `/app/.env.prod` 생성)
+- [x] CI/CD 동작 확인 (컨테이너 3개 정상 실행)
+
+### 남은 작업
+- [ ] ALB 생성 + Target Group 연결 (외부 접속 확인)
+- [ ] 공고 목록 화면 동작 확인
