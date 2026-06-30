@@ -16,8 +16,7 @@ services:
     restart: unless-stopped
 
   backend:
-    build:
-      context: ../backend
+    image: 200596937528.dkr.ecr.ap-northeast-2.amazonaws.com/bid-radar/backend:latest
     container_name: bidradar-backend
     environment:
       DB_HOST: postgres
@@ -34,8 +33,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ../frontend
+    image: 200596937528.dkr.ecr.ap-northeast-2.amazonaws.com/bid-radar/frontend:latest
     container_name: bidradar-frontend
     ports:
       - "80:80"
