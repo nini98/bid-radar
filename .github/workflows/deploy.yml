@@ -67,11 +67,7 @@ jobs:
             --instance-ids "${{ secrets.EC2_INSTANCE_ID }}" \
             --document-name "AWS-RunShellScript" \
             --parameters '{"commands":[
-              "set -e",
-              "aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 200596937528.dkr.ecr.ap-northeast-2.amazonaws.com",
-              "docker compose -f /app/docker-compose.prod.yml --env-file /app/.env.prod pull",
-              "docker compose -f /app/docker-compose.prod.yml --env-file /app/.env.prod up -d",
-              "docker image prune -f"
+              "su -l ec2-user -c \"set -e && aws ecr get-login-password --region ap-northeast-2 | docker login --username AWS --password-stdin 200596937528.dkr.ecr.ap-northeast-2.amazonaws.com && docker compose -f /app/docker-compose.prod.yml --env-file /app/.env.prod pull && docker compose -f /app/docker-compose.prod.yml --env-file /app/.env.prod up -d && docker image prune -f\""
             ]}' \
             --query "Command.CommandId" \
             --output text)
