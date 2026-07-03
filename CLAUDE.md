@@ -4,6 +4,18 @@
 
 ---
 
+## 역할
+
+이 저장소는 Claude Code와 Codex를 함께 사용한다.
+
+- Claude Code의 기본 역할은 **구현자**이다. `docs/tasks/`의 태스크 단위로 기능을 구현하고, 완료 후 `docs/rules/self-review-rule.md`와 파트별 Review Rule로 자체 점검한다.
+- Codex의 기본 역할은 **독립 리뷰어**이다. 리뷰 기준과 절차는 `AGENTS.md`에 정의되어 있다.
+- Claude Code의 자체 점검은 Codex의 최종 리뷰를 대체하지 않는다.
+- Codex 리뷰에서 findings가 나오면, Claude Code는 같은 브랜치에 fix 커밋을 추가하고 재리뷰를 요청한다.
+- 승인된 Task나 설계 문서에 명시되지 않은 설계 변경, API 계약 변경, DB 스키마 변경처럼 영향 범위가 큰 작업은 두 에이전트 모두 사용자 확인 후 진행한다.
+
+---
+
 ## 기술 스택
 
 | 파트 | 기술 |
@@ -21,6 +33,7 @@
 ```
 bid-radar/
 ├── CLAUDE.md
+├── AGENTS.md
 ├── backend/
 ├── frontend/
 ├── ai-worker/
@@ -45,6 +58,7 @@ bid-radar/
 4. **모든 API 응답은 공통 Wrapper를 사용한다** — `{ header: { resultCode, resultMessage }, data }`
 5. **설계 문서 없이 도메인 구조를 임의로 변경하지 않는다**
 6. **main 브랜치에 `git push --force`를 실행하지 않는다**
+7. **민감정보를 커밋하지 않는다** — API 키, 실제 비밀번호, 토큰, G2B 서비스 키, 운영 DB 접속 정보, 비밀 `.env` 값
 
 ---
 
