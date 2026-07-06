@@ -84,9 +84,14 @@ chore(config): application.yml 환경 분리 구조 적용
 | 브랜치 | 용도 |
 |---|---|
 | `main` | 운영 배포 기준 브랜치 |
-| `feat/{epic}-{설명}` | 기능 개발 (예: `feat/epic1-bid-list`) |
-| `fix/{설명}` | 버그 수정 (예: `fix/duplicate-bid-save`) |
+| `feature/{epic}-{설명}` | 기능 개발 (예: `feature/epic1-bid-list`) |
+| `fix/{설명}` | 일반 버그 수정, 급하지 않음 (예: `fix/duplicate-bid-save`) |
+| `hotfix/{설명}` | 운영 중인 서비스의 심각한 버그를 신속히 배포해야 하는 경우 (예: `hotfix/payment-failure`) |
 | `chore/{설명}` | 설정, 의존성 (예: `chore/flyway-setup`) |
+
+`fix`와 `hotfix`의 구분은 머지 여부가 아니라 긴급도다. 정상 릴리즈 사이클로 처리 가능하면 `fix`, 즉시 배포가 필요하면 `hotfix`.
+
+브랜치는 태스크 착수 시점에 생성한다. 미리 만들어두지 않는다.
 
 ---
 
@@ -95,5 +100,5 @@ chore(config): application.yml 환경 분리 구조 적용
 - 커밋 메시지를 영어로만 작성하지 않는다 — 요약과 본문은 한글로 작성한다
 - 타입 없이 커밋하지 않는다
 - 여러 독립적인 변경을 하나의 커밋에 묶지 않는다
-- `main`에 직접 force push하지 않는다
+- 푸시된 커밋에 force push, `git reset`을 하지 않는다 (자신만 작업 중인 브랜치라도 예외 없음). 되돌림은 revert 커밋으로 한다 — AI 에이전트는 브랜치의 공유/리뷰 상태를 확실히 알 수 없기 때문
 - 민감정보(API 키, 비밀번호, .env 파일)를 커밋하지 않는다
