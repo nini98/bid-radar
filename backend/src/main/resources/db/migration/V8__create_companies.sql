@@ -1,0 +1,22 @@
+CREATE TABLE companies (
+    id                  BIGSERIAL    NOT NULL,
+    user_id             BIGINT       NOT NULL,
+    company_name        VARCHAR(200) NOT NULL,
+    business_number     VARCHAR(20),
+    industry            VARCHAR(100),
+    founded_year        INTEGER,
+    company_size        VARCHAR(50),
+    region              VARCHAR(100),
+    address             VARCHAR(300),
+    website             VARCHAR(300),
+    strengths           TEXT,
+    manager_name        VARCHAR(100),
+    manager_email       VARCHAR(255),
+    manager_phone       VARCHAR(20),
+    narajangter_linked  BOOLEAN      NOT NULL DEFAULT FALSE,
+    created_at          TIMESTAMP    NOT NULL,
+    updated_at          TIMESTAMP    NOT NULL,
+    CONSTRAINT pk_companies PRIMARY KEY (id),
+    CONSTRAINT uk_companies_user_id UNIQUE (user_id),
+    CONSTRAINT fk_companies_user FOREIGN KEY (user_id) REFERENCES users (id)
+);
