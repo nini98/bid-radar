@@ -27,12 +27,12 @@ Spring Boot
 
 ## Done Condition
 
-- [ ] `GET /api/companies/me` 요청 시 로그인한 사용자의 회사 프로필이 반환된다
-- [ ] 프로필이 없는 사용자가 조회 시 `data: null` 형태로(에러 아님) 응답된다
-- [ ] `PUT /api/companies/me` 요청 시 회사 프로필이 생성 또는 수정된다
-- [ ] `techTagIds`, `businessAreaIds`로 전달한 코드 ID가 하위 테이블에 정상 반영된다
-- [ ] 존재하지 않는 `techTagIds`/`businessAreaIds` 전달 시 400 응답이 반환된다
-- [ ] 모든 응답이 공통 Wrapper를 사용한다
+- [x] `GET /api/companies/me` 요청 시 로그인한 사용자의 회사 프로필이 반환된다
+- [x] 프로필이 없는 사용자가 조회 시 `data: null` 형태로(에러 아님) 응답된다
+- [x] `PUT /api/companies/me` 요청 시 회사 프로필이 생성 또는 수정된다
+- [x] `techTagIds`, `businessAreaIds`로 전달한 코드 ID가 하위 테이블에 정상 반영된다
+- [x] 존재하지 않는 `techTagIds`/`businessAreaIds` 전달 시 400 응답이 반환된다
+- [x] 모든 응답이 공통 Wrapper를 사용한다
 
 ---
 
@@ -46,14 +46,14 @@ Spring Boot
 
 ## 작업 항목
 
-- [ ] `CompanyRepository` 구현 (`findByUserId`)
-- [ ] `CompanyTechTagRepository`, `CompanyBusinessAreaRepository`, `CompanyCertificateRepository`, `CompanyProjectExperienceRepository`, `CompanyBidPreferenceRepository` 구현
-- [ ] `CompanyProfileRequest` DTO 작성 (companyName, businessNumber, industry, foundedYear, companySize, region, address, website, strengths, techTagIds, businessAreaIds, certificates, projectExperiences, bidPreference, managerName, managerEmail, managerPhone — Bean Validation 포함)
-- [ ] `CompanyProfileResponse` DTO 작성 (03 API 명세의 응답 구조 그대로: techTags, businessAreas, certificates, projectExperiences, bidPreference 포함)
-- [ ] `CompanyProfileService` 구현
+- [x] `CompanyRepository` 구현 (`findByUserId`)
+- [x] `CompanyTechTagRepository`, `CompanyBusinessAreaRepository`, `CompanyCertificateRepository`, `CompanyProjectExperienceRepository`, `CompanyBidPreferenceRepository` 구현
+- [x] `CompanyProfileRequest` DTO 작성 (companyName, businessNumber, industry, foundedYear, companySize, region, address, website, strengths, techTagIds, businessAreaIds, certificates, projectExperiences, bidPreference, managerName, managerEmail, managerPhone — Bean Validation 포함)
+- [x] `CompanyProfileResponse` DTO 작성 (03 API 명세의 응답 구조 그대로: techTags, businessAreas, certificates, projectExperiences, bidPreference 포함)
+- [x] `CompanyProfileService` 구현
   - 조회: `user_id` 기준 회사 없으면 `null` 반환
   - 저장: 회사 없으면 신규 생성, 있으면 수정 (하위 컬렉션은 전체 교체 방식)
   - `techTagIds`/`businessAreaIds` 유효성 검증 (존재하지 않는 ID → `ApiException` BAD_REQUEST)
-- [ ] `CompanyProfileController` 구현
+- [x] `CompanyProfileController` 구현
   - `GET /api/companies/me`
   - `PUT /api/companies/me`
