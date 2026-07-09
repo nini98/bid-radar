@@ -1,0 +1,31 @@
+INSERT INTO tech_tags (name, created_at) VALUES
+    ('Java', now()),
+    ('Spring', now()),
+    ('Spring Boot', now()),
+    ('Python', now()),
+    ('React', now()),
+    ('Vue.js', now()),
+    ('Node.js', now()),
+    ('AWS', now()),
+    ('Azure', now()),
+    ('Docker', now()),
+    ('Kubernetes', now()),
+    ('MSA', now()),
+    ('QueryDSL', now()),
+    ('PostgreSQL', now()),
+    ('MySQL', now()),
+    ('Oracle', now()),
+    ('AI', now()),
+    ('빅데이터', now());
+
+INSERT INTO business_areas (name, created_at) VALUES
+    ('SI', now()),
+    ('SM(유지보수)', now()),
+    ('공공SI', now()),
+    ('스마트팩토리', now()),
+    ('관제시스템', now()),
+    ('클라우드', now()),
+    ('AI', now()),
+    ('빅데이터', now()),
+    ('IoT', now()),
+    ('정보보안', now());
