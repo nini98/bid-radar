@@ -79,4 +79,30 @@ public class Company extends BaseEntity {
         company.narajangterLinked = false;
         return company;
     }
+
+    public void update(String companyName,
+                        String businessNumber,
+                        String industry,
+                        Integer foundedYear,
+                        String companySize,
+                        String region,
+                        String address,
+                        String website,
+                        String strengths,
+                        String managerName,
+                        String managerEmail,
+                        String managerPhone) {
+        this.companyName = companyName;
+        this.businessNumber = businessNumber;
+        this.industry = industry;
+        this.foundedYear = foundedYear;
+        this.companySize = companySize;
+        this.region = region;
+        this.address = address;
+        this.website = website;
+        this.strengths = strengths;
+        this.managerName = managerName;
+        this.managerEmail = managerEmail;
+        this.managerPhone = managerPhone;
+    }
 }
