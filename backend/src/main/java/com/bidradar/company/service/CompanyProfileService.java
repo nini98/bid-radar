@@ -61,6 +61,7 @@ public class CompanyProfileService {
     public CompanyProfileResponse saveProfile(Long userId, CompanyProfileRequest request) {
         List<TechTag> techTags = validateTechTags(request.techTagIds());
         List<BusinessArea> businessAreas = validateBusinessAreas(request.businessAreaIds());
+        validateBidPreference(request.bidPreference());
 
         Company company = companyRepository.findByUserId(userId)
                 .orElseGet(() -> Company.create(userRepository.getReferenceById(userId), request.companyName()));
@@ -100,6 +101,17 @@ public class CompanyProfileService {
             throw new ApiException(ResultCode.VALIDATION_ERROR);
         }
         return businessAreas;
+    }
+
+    private void validateBidPreference(BidPreferenceRequest bidPreference) {
+        if (bidPreference == null) {
+            return;
+        }
+        Long budgetMin = bidPreference.budgetMin();
+        Long budgetMax = bidPreference.budgetMax();
+        if (budgetMin != null && budgetMax != null && budgetMin > budgetMax) {
+            throw new ApiException(ResultCode.VALIDATION_ERROR);
+        }
     }
 
     private void replaceTechTags(Company company, List<TechTag> techTags) {

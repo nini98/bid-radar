@@ -159,6 +159,23 @@ class CompanyProfileServiceTest {
     }
 
     @Test
+    @DisplayName("budgetMin이 budgetMax보다 크면 VALIDATION_ERROR 예외가 발생한다")
+    void saveProfile_budgetMin이_budgetMax보다크면_예외() {
+        // given
+        CompanyProfileRequest request = new CompanyProfileRequest(
+                "델타소프트", null, null, null, null, null, null, null, null,
+                List.of(), List.of(), List.of(), List.of(),
+                new BidPreferenceRequest(List.of(), 100_000_000L, 1_000_000L, null, List.of(), List.of()),
+                null, null, null
+        );
+
+        // when // then
+        assertThatThrownBy(() -> companyProfileService.saveProfile(1L, request))
+                .isInstanceOf(ApiException.class)
+                .satisfies(e -> assertThat(((ApiException) e).getResultCode()).isEqualTo(ResultCode.VALIDATION_ERROR));
+    }
+
+    @Test
     @DisplayName("회사가 없는 사용자가 저장하면 신규 회사가 생성되고 하위 데이터가 저장된다")
     void saveProfile_회사없는사용자가_저장시_신규회사생성() {
         // given
