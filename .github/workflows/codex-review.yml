@@ -24,16 +24,16 @@ jobs:
       - name: Install Codex CLI
         run: npm install -g @openai/codex
 
+      - name: Allow unprivileged user namespaces (bubblewrap sandbox)
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
       - name: Login with API key
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: printenv OPENAI_API_KEY | codex login --with-api-key
 
       - name: Run review
-        run: |
-          codex exec review --base origin/main -m gpt-5.5 \
-            --dangerously-bypass-approvals-and-sandbox \
-            > review-output.md
+        run: codex exec review --base origin/main -m gpt-5.5 > review-output.md
 
       - name: Post review as PR comment
         env:
