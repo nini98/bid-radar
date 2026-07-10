@@ -96,4 +96,23 @@ public class BidMatchResult {
         result.calculatedAt = LocalDateTime.now();
         return result;
     }
+
+    public void update(BigDecimal totalScore,
+                        MatchGrade grade,
+                        BigDecimal scoreTech,
+                        BigDecimal scoreRegion,
+                        BigDecimal scoreBudget,
+                        BigDecimal scoreBusiness,
+                        String matchedKeywords,
+                        String scoreReason) {
+        this.totalScore = totalScore;
+        this.grade = grade;
+        this.scoreTech = scoreTech;
+        this.scoreRegion = scoreRegion;
+        this.scoreBudget = scoreBudget;
+        this.scoreBusiness = scoreBusiness;
+        this.matchedKeywords = matchedKeywords;
+        this.scoreReason = scoreReason;
+        this.calculatedAt = LocalDateTime.now();
+    }
 }
