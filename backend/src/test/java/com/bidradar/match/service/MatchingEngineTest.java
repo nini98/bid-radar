@@ -41,6 +41,8 @@ class MatchingEngineTest {
     ScoreRule deadline;
     @Mock
     ScoreRule regionRestriction;
+    @Mock
+    ScoreRule extraRule;
 
     @Test
     @DisplayName("8개 룰의 점수를 합산해 총점을 계산한다")
@@ -150,6 +152,27 @@ class MatchingEngineTest {
         assertThat(first.grade()).isEqualTo(second.grade());
         assertThat(first.matchedKeywords()).isEqualTo(second.matchedKeywords());
         assertThat(first.scoreReason()).isEqualTo(second.scoreReason());
+    }
+
+    @Test
+    @DisplayName("등록된 룰이 늘어나 만점 합계가 100을 넘어도 총점은 0~100 범위로 정규화된다")
+    void 룰추가로_만점합계가100초과해도_정규화된다() {
+        // given
+        stub(20, 20, 15, 10, 10, 10, 10, 5); // 기존 8개 룰 만점(100/100)
+        given(extraRule.calculate(any(), any(), any()))
+                .willReturn(new ScoreResult("extraRule", 0, 20, "extra reason", List.of())); // 새 룰은 0/20
+        MatchingEngine engine = new MatchingEngine(
+                List.of(techTagMatch, businessAreaMatch, budgetRange, regionMatch,
+                        industryRestriction, bidType, deadline, regionRestriction, extraRule),
+                objectMapper
+        );
+
+        // when
+        MatchCalculationResult result = engine.calculate(bid(), null, profile());
+
+        // then
+        assertThat(result.totalScore().intValue()).isBetween(0, 100);
+        assertThat(result.totalScore().intValue()).isEqualTo(83); // 100/120 * 100 반올림
     }
 
     private void stub(int tech, int business, int budget, int region,

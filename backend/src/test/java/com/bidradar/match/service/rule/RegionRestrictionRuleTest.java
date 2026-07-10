@@ -19,10 +19,23 @@ class RegionRestrictionRuleTest {
             new CompanyProfileContext(Set.of(), Set.of(), List.of(), null, null, null, List.of(), List.of());
 
     @Test
-    @DisplayName("지역 제한이 없으면 만점을 받는다")
-    void 지역제한없으면_만점() {
+    @DisplayName("지역 제한 정보가 수집되지 않았으면(null) 0점을 받는다")
+    void 지역제한_미수집이면_0점() {
         // given
         BidNotice bid = bidNotice(null);
+
+        // when
+        ScoreResult result = rule.calculate(bid, RuleTestFixtures.company(), profile);
+
+        // then
+        assertThat(result.score()).isEqualTo(0);
+    }
+
+    @Test
+    @DisplayName("지역 제한이 명시적으로 없음(빈 문자열)이면 만점을 받는다")
+    void 지역제한_명시적으로없으면_만점() {
+        // given
+        BidNotice bid = bidNotice("");
 
         // when
         ScoreResult result = rule.calculate(bid, RuleTestFixtures.company(), profile);

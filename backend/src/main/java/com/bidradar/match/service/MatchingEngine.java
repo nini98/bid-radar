@@ -36,7 +36,7 @@ public class MatchingEngine {
                 .sorted(Comparator.comparingInt(result -> RULE_ORDER.indexOf(result.ruleName())))
                 .toList();
 
-        int totalScore = results.stream().mapToInt(ScoreResult::score).sum();
+        int totalScore = normalize(results);
         MatchGrade grade = resolveGrade(totalScore);
 
         Map<String, ScoreResult> byRule = results.stream()
@@ -56,6 +56,15 @@ public class MatchingEngine {
                 toJson(results),
                 scoreReason
         );
+    }
+
+    private int normalize(List<ScoreResult> results) {
+        int rawScore = results.stream().mapToInt(ScoreResult::score).sum();
+        int maxPossible = results.stream().mapToInt(ScoreResult::maxScore).sum();
+        if (maxPossible == 0) {
+            return 0;
+        }
+        return Math.round(rawScore * 100f / maxPossible);
     }
 
     private MatchGrade resolveGrade(int totalScore) {
