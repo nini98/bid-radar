@@ -30,7 +30,7 @@ jobs:
         run: printenv OPENAI_API_KEY | codex login --with-api-key
 
       - name: Run review
-        run: codex exec review --base origin/main > review-output.md
+        run: codex exec review --base origin/main -m gpt-5.5 > review-output.md
 
       - name: Post review as PR comment
         env:
