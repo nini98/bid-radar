@@ -20,6 +20,7 @@
       "Bash(git branch -D*)",
       "Bash(git branch --delete --force*)",
       "Bash(gh pr merge*)",
+      "Bash(gh pr close*)",
       "Bash(gh repo delete*)",
       "Bash(gh repo archive*)",
       "Bash(gh auth token*)",
