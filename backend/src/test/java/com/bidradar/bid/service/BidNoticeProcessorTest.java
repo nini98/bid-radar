@@ -1,5 +1,6 @@
 package com.bidradar.bid.service;
 
+import com.bidradar.bid.event.BidNoticeCollectedEvent;
 import com.bidradar.bid.infra.dto.G2bNoticeItem;
 import com.bidradar.bid.repository.BidAttachmentRepository;
 import com.bidradar.bid.repository.BidNoticeRepository;
@@ -12,11 +13,14 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
@@ -35,6 +39,9 @@ class BidNoticeProcessorTest extends IntegrationTestBase {
 
     @MockitoBean
     ObjectMapper objectMapper;
+
+    @MockitoBean
+    ApplicationEventPublisher eventPublisher;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -55,6 +62,19 @@ class BidNoticeProcessorTest extends IntegrationTestBase {
     }
 
     @Test
+    @DisplayName("공고를 신규 저장하면 BidNoticeCollectedEvent가 발행된다")
+    void 공고를_신규저장하면_이벤트가_발행된다() {
+        // given
+        G2bNoticeItem item = createItem("20250001");
+
+        // when
+        processor.process(item);
+
+        // then
+        verify(eventPublisher).publishEvent(any(BidNoticeCollectedEvent.class));
+    }
+
+    @Test
     @DisplayName("같은 공고를 두 번 처리해도 중복 저장되지 않는다")
     void 같은_공고를_두번_처리해도_중복저장되지않는다() {
         // given
@@ -66,6 +86,20 @@ class BidNoticeProcessorTest extends IntegrationTestBase {
 
         // then
         assertThat(bidNoticeRepository.count()).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("중복 공고는 이벤트가 다시 발행되지 않는다")
+    void 중복_공고는_이벤트가_다시_발행되지_않는다() {
+        // given
+        G2bNoticeItem item = createItem("20250001");
+        processor.process(item);
+
+        // when
+        processor.process(item);
+
+        // then
+        verify(eventPublisher).publishEvent(any(BidNoticeCollectedEvent.class));
     }
 
     @Test
