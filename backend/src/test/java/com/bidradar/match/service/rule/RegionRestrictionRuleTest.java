@@ -19,8 +19,8 @@ class RegionRestrictionRuleTest {
             new CompanyProfileContext(Set.of(), Set.of(), List.of(), null, null, null, List.of(), List.of());
 
     @Test
-    @DisplayName("지역 제한 정보가 수집되지 않았으면(null) 0점을 받는다")
-    void 지역제한_미수집이면_0점() {
+    @DisplayName("지역 제한 정보가 수집되지 않았으면(null) 채점에서 제외된다")
+    void 지역제한_미수집이면_채점제외() {
         // given
         BidNotice bid = bidNotice(null);
 
@@ -29,6 +29,7 @@ class RegionRestrictionRuleTest {
 
         // then
         assertThat(result.score()).isEqualTo(0);
+        assertThat(result.maxScore()).isEqualTo(0);
     }
 
     @Test

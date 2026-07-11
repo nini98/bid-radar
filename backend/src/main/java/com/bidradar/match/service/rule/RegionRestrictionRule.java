@@ -18,7 +18,7 @@ public class RegionRestrictionRule implements ScoreRule {
         String restriction = bid.getRegionRestriction();
 
         if (restriction == null) {
-            return new ScoreResult(RULE_NAME, 0, MAX_SCORE, "지역 제한 정보 없음 (미수집)", List.of());
+            return new ScoreResult(RULE_NAME, 0, 0, "지역 제한 정보 없음 (미수집, 채점 제외)", List.of());
         }
         if (restriction.isBlank()) {
             return new ScoreResult(RULE_NAME, MAX_SCORE, MAX_SCORE, "지역 제한 없음", List.of());
