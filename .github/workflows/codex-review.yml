@@ -35,7 +35,10 @@ jobs:
         run: printenv OPENAI_API_KEY | codex login --with-api-key
 
       - name: Run review
-        run: codex exec review --base origin/main -m gpt-5.5 > review-output.md
+        run: |
+          codex exec review --base origin/main -m gpt-5.5 \
+            "이 저장소 루트의 AGENTS.md에 정의된 리뷰 우선순위, 심각도 기준(Critical/High/Medium/Low), 응답 형식(Findings/Open Questions/Summary/Verification)을 따르라. 모든 응답은 한국어로 작성하라." \
+            > review-output.md
 
       - name: Post review as PR comment
         env:
