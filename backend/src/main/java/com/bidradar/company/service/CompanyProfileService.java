@@ -57,6 +57,13 @@ public class CompanyProfileService {
                 .orElse(null);
     }
 
+    @Transactional(readOnly = true)
+    public void validateProfileExists(Long userId) {
+        if (!companyRepository.existsByUserId(userId)) {
+            throw new ApiException(ResultCode.NOT_FOUND);
+        }
+    }
+
     @Transactional
     public CompanyProfileResponse saveProfile(Long userId, CompanyProfileRequest request) {
         List<TechTag> techTags = validateTechTags(request.techTagIds());

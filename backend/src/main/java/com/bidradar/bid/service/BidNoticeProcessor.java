@@ -2,11 +2,13 @@ package com.bidradar.bid.service;
 
 import com.bidradar.bid.domain.BidAttachment;
 import com.bidradar.bid.domain.BidNotice;
+import com.bidradar.bid.event.BidNoticeCollectedEvent;
 import com.bidradar.bid.infra.dto.G2bNoticeItem;
 import com.bidradar.bid.repository.BidAttachmentRepository;
 import com.bidradar.bid.repository.BidNoticeRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,7 @@ public class BidNoticeProcessor {
     private final BidNoticeRepository bidNoticeRepository;
     private final BidAttachmentRepository bidAttachmentRepository;
     private final G2bNoticeMapper g2bNoticeMapper;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public boolean process(G2bNoticeItem item) {
@@ -35,6 +38,7 @@ public class BidNoticeProcessor {
             bidAttachmentRepository.saveAll(attachments);
         }
 
+        eventPublisher.publishEvent(new BidNoticeCollectedEvent(notice.getId()));
         return true;
     }
 }
