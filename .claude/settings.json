@@ -4,7 +4,32 @@
       "Bash(curl *)",
       "Bash(git *)",
       "Bash(docker *)",
-      "Bash(docker-compose *)"
+      "Bash(docker-compose *)",
+      "Bash(gh *)",
+      "Edit(**/*.java)",
+      "Write(**/*.java)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push -f*)",
+      "Bash(git push --force-with-lease*)",
+      "Bash(git push --mirror*)",
+      "Bash(git push origin +*)",
+      "Bash(git push *+*)",
+      "Bash(git reset --hard*)",
+      "Bash(git branch -D*)",
+      "Bash(git branch --delete --force*)",
+      "Bash(gh pr merge*)",
+      "Bash(gh pr close*)",
+      "Bash(gh repo delete*)",
+      "Bash(gh repo archive*)",
+      "Bash(gh auth token*)",
+      "Bash(gh auth logout*)",
+      "Bash(gh workflow run*)",
+      "Bash(gh workflow disable*)",
+      "Bash(gh secret *)",
+      "Bash(gh release delete*)",
+      "Bash(gh api *)"
     ]
   }
 }
