@@ -6,6 +6,7 @@ import com.bidradar.bid.dto.response.BidNoticeDetailResponse;
 import com.bidradar.bid.service.BidNoticeService;
 import com.bidradar.common.response.Response;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
@@ -16,12 +17,14 @@ public class BidNoticeController {
     private final BidNoticeService bidNoticeService;
 
     @GetMapping
-    public Response<BidListResponse> getList(@ModelAttribute BidNoticeSearchCondition condition) {
-        return Response.success(bidNoticeService.getList(condition));
+    public Response<BidListResponse> getList(@ModelAttribute BidNoticeSearchCondition condition,
+                                              @AuthenticationPrincipal Long userId) {
+        return Response.success(bidNoticeService.getList(condition, userId));
     }
 
     @GetMapping("/{bidId}")
-    public Response<BidNoticeDetailResponse> getDetail(@PathVariable Long bidId) {
-        return Response.success(bidNoticeService.getDetail(bidId));
+    public Response<BidNoticeDetailResponse> getDetail(@PathVariable Long bidId,
+                                                         @AuthenticationPrincipal Long userId) {
+        return Response.success(bidNoticeService.getDetail(bidId, userId));
     }
 }

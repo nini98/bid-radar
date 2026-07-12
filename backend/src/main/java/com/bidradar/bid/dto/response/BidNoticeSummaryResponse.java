@@ -13,5 +13,6 @@ public record BidNoticeSummaryResponse(
         String bidType,
         BidStatus status,
         LocalDateTime bidDeadline,
-        LocalDateTime publishedAt
+        LocalDateTime publishedAt,
+        MatchResultResponse matchResult
 ) {}
