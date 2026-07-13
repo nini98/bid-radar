@@ -26,7 +26,8 @@ Codex(공식 GitHub App, `chatgpt-codex-connector`)가 PR에 남기는 리뷰를
    - **Expiration**: 90일 권장 (만료 시 재발급)
    - **Resource owner**: `nini98`
    - **Repository access**: "Only select repositories" → `nini98/bid-radar`만 선택
-   - **Permissions** → Repository permissions → **Pull requests: Read-only**만 부여 (나머지는 No access)
+   - **Permissions** → Repository permissions → **Pull requests: Read-only**, **Issues: Read-only** 두 개만 부여 (나머지는 No access)
+     - `Issues: Read-only`가 없으면 5절의 `/issues/{PR번호}/reactions` 호출이 권한 부족으로 실패해, findings 없는 자동 리뷰(👍만 남는 경우)를 "자동 트리거 실패"로 오판하게 된다.
 5. **Generate token** → 생성된 값은 그 페이지에서만 보이므로 즉시 복사
 
 ---
@@ -54,18 +55,21 @@ source ~/.zshrc
 2. **먼저 자동 반응이 왔는지 확인한다.** Codex는 findings가 있으면 인라인 리뷰 코멘트를 남기고, **findings가 없으면 코멘트 없이 PR에 👍(`+1`) 리액션만 남긴다.** 그래서 반드시 두 엔드포인트를 모두 확인해야 한다 — 코멘트만 확인하면 "리뷰는 자동으로 됐는데 이상 없음"인 경우를 "자동 트리거 실패"로 잘못 판단하게 된다.
 
 ```bash
-# 인라인 리뷰 코멘트 (findings가 있을 때)
+# 인라인 리뷰 코멘트 (findings가 있을 때) — per_page 기본값 30이라 오래된 PR은 최신순 정렬 필수
 curl -s -H "Authorization: Bearer $BID_RADAR_GH_PR_READ_TOKEN" \
   -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/nini98/bid-radar/pulls/{PR번호}/comments
+  "https://api.github.com/repos/nini98/bid-radar/pulls/{PR번호}/comments?sort=created&direction=desc&per_page=100"
 
 # PR(issue) 리액션 (findings가 없을 때 👍만 남음)
 curl -s -H "Authorization: Bearer $BID_RADAR_GH_PR_READ_TOKEN" \
   -H "Accept: application/vnd.github+json" \
-  https://api.github.com/repos/nini98/bid-radar/issues/{PR번호}/reactions
+  "https://api.github.com/repos/nini98/bid-radar/issues/{PR번호}/reactions?per_page=100"
 ```
 
-push 시각 이후의 `created_at`을 가진 코멘트나 리액션이 있는지로 판단한다. 실측 기준 자동 반응은 보통 4~9분 안에 온다.
+push 시각 이후의 `created_at`을 가진 항목이 있는지로 판단하되, 아래 두 조건까지 함께 확인한다 — 같은 시간대에 사람이 남긴 코멘트/리액션을 자동 응답으로 오판하지 않기 위해서다.
+
+- 코멘트: `user.login`이 `chatgpt-codex-connector[bot]`인 것만 Codex 응답으로 간주한다.
+- 리액션: `user.login`이 `chatgpt-codex-connector[bot]`이고 `content`가 `+1`인 것만 "findings 없음"으로 간주한다.
 
 3. 수 분(10분 이상) 기다려도 코멘트도 리액션도 없으면, 그때 `gh pr comment {PR번호} --body "@codex review"`로 재리뷰를 직접 트리거한다 (`gh pr comment`는 `.claude/settings.json`에서 막혀있지 않음). 트리거 후에도 위 2번 방식으로 확인한다.
 4. findings가 있으면 다시 1번으로 돌아가고, 없으면(코멘트 없음 + 👍 리액션 확인) 종료한다.
@@ -77,4 +81,4 @@ push 시각 이후의 `created_at`을 가진 코멘트나 리액션이 있는지
 - 토큰 값을 이 문서나 다른 어떤 파일에도 기록하지 않는다.
 - 토큰 값을 커밋, PR 코멘트, 채팅 로그에 붙여넣지 않는다.
 - `.claude/settings.json`의 `Bash(gh api *)` deny를 이 목적으로 풀지 않는다.
-- 이 토큰에 Pull requests: Read-only 이외의 권한을 추가하지 않는다.
+- 이 토큰에 Pull requests: Read-only, Issues: Read-only 이외의 권한을 추가하지 않는다.
