@@ -185,11 +185,42 @@ class BidNoticeRepositoryImplTest extends IntegrationTestBase {
                 .containsExactly(newerBid.getId(), olderBid.getId());
     }
 
+    @Test
+    @DisplayName("sort=score 정렬 시 점수와 publishedAt이 모두 같으면 id로 결정적으로 정렬된다")
+    void sort_score가_publishedAt까지_동점일때_id로_보조정렬된다() {
+        // given
+        LocalDateTime samePublishedAt = LocalDateTime.now();
+        BidNotice firstBid = entityManager.persistAndFlush(createBid("20250111", samePublishedAt));
+        BidNotice secondBid = entityManager.persistAndFlush(createBid("20250112", samePublishedAt));
+        Company company = createCompany("owner7@bidradar.com");
+        entityManager.persistAndFlush(BidMatchResult.create(
+                firstBid, company, new BigDecimal("70.00"), MatchGrade.RECOMMENDED,
+                null, null, null, null, null, null));
+        entityManager.persistAndFlush(BidMatchResult.create(
+                secondBid, company, new BigDecimal("70.00"), MatchGrade.RECOMMENDED,
+                null, null, null, null, null, null));
+        entityManager.clear();
+
+        BidSearchCondition condition = new BidSearchCondition(
+                null, null, null, null, null, null, company.getId(), BidSortType.SCORE);
+
+        // when
+        Page<BidNoticeSummaryResponse> page = bidNoticeRepository.search(condition, PageRequest.of(0, 20));
+
+        // then
+        assertThat(page.getContent()).extracting(BidNoticeSummaryResponse::id)
+                .containsExactly(secondBid.getId(), firstBid.getId());
+    }
+
     private BidNotice createBid(String externalNoticeId) {
+        return createBid(externalNoticeId, LocalDateTime.now());
+    }
+
+    private BidNotice createBid(String externalNoticeId, LocalDateTime publishedAt) {
         return BidNotice.create(new BidNoticeCreateCommand(
                 externalNoticeId, "G2B", "테스트 공고 " + externalNoticeId, "국토교통부",
                 50_000_000L, "서울특별시", "일반경쟁", "일반계약", null, null,
-                LocalDateTime.now(), null, LocalDateTime.now().plusDays(10), null, null));
+                publishedAt, null, LocalDateTime.now().plusDays(10), null, null));
     }
 
     private Company createCompany(String email) {
