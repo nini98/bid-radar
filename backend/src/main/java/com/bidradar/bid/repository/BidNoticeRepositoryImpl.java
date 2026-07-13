@@ -130,11 +130,11 @@ public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
         return builder;
     }
 
-    private OrderSpecifier<?> orderBy(BidSortType sort) {
+    private OrderSpecifier<?>[] orderBy(BidSortType sort) {
         return switch (sort) {
-            case DEADLINE -> bid.bidDeadline.asc();
-            case SCORE -> matchResult.totalScore.desc().nullsLast();
-            case LATEST -> bid.publishedAt.desc();
+            case DEADLINE -> new OrderSpecifier<?>[]{bid.bidDeadline.asc()};
+            case SCORE -> new OrderSpecifier<?>[]{matchResult.totalScore.desc().nullsLast(), bid.publishedAt.desc()};
+            case LATEST -> new OrderSpecifier<?>[]{bid.publishedAt.desc()};
         };
     }
 }

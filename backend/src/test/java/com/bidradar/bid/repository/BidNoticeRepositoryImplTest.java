@@ -159,6 +159,32 @@ class BidNoticeRepositoryImplTest extends IntegrationTestBase {
                 .containsExactly(matchedBid.getId(), unmatchedBid.getId());
     }
 
+    @Test
+    @DisplayName("sort=score 정렬 시 점수가 같으면 publishedAt 내림차순으로 안정적으로 정렬된다")
+    void sort_score가_동점일때_publishedAt으로_보조정렬된다() {
+        // given
+        BidNotice olderBid = entityManager.persistAndFlush(createBid("20250109"));
+        BidNotice newerBid = entityManager.persistAndFlush(createBid("20250110"));
+        Company company = createCompany("owner6@bidradar.com");
+        entityManager.persistAndFlush(BidMatchResult.create(
+                olderBid, company, new BigDecimal("70.00"), MatchGrade.RECOMMENDED,
+                null, null, null, null, null, null));
+        entityManager.persistAndFlush(BidMatchResult.create(
+                newerBid, company, new BigDecimal("70.00"), MatchGrade.RECOMMENDED,
+                null, null, null, null, null, null));
+        entityManager.clear();
+
+        BidSearchCondition condition = new BidSearchCondition(
+                null, null, null, null, null, null, company.getId(), BidSortType.SCORE);
+
+        // when
+        Page<BidNoticeSummaryResponse> page = bidNoticeRepository.search(condition, PageRequest.of(0, 20));
+
+        // then
+        assertThat(page.getContent()).extracting(BidNoticeSummaryResponse::id)
+                .containsExactly(newerBid.getId(), olderBid.getId());
+    }
+
     private BidNotice createBid(String externalNoticeId) {
         return BidNotice.create(new BidNoticeCreateCommand(
                 externalNoticeId, "G2B", "테스트 공고 " + externalNoticeId, "국토교통부",
