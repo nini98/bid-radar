@@ -25,5 +25,6 @@ public record BidNoticeDetailResponse(
         LocalDateTime openAt,
         BidStatus status,
         LocalDateTime collectedAt,
-        List<BidAttachmentResponse> attachments
+        List<BidAttachmentResponse> attachments,
+        MatchResultResponse matchResult
 ) {}

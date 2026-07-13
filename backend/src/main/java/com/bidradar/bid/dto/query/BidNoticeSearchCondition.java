@@ -1,11 +1,14 @@
 package com.bidradar.bid.dto.query;
 
+import com.bidradar.match.domain.MatchGrade;
+
 public record BidNoticeSearchCondition(
         String keyword,
         String region,
         Long budgetMin,
         Long budgetMax,
         Integer deadlineDays,
+        MatchGrade grade,
         BidSortType sort,
         Integer page,
         Integer size

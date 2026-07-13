@@ -4,6 +4,8 @@ import com.bidradar.bid.domain.BidAttachment;
 import com.bidradar.bid.domain.BidNotice;
 import com.bidradar.bid.dto.response.BidAttachmentResponse;
 import com.bidradar.bid.dto.response.BidNoticeDetailResponse;
+import com.bidradar.bid.dto.response.MatchResultResponse;
+import com.bidradar.match.domain.BidMatchResult;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
@@ -15,6 +17,9 @@ public interface BidNoticeMapper {
     @Mapping(source = "downloaded", target = "isDownloaded")
     @Mapping(source = "analyzed", target = "isAnalyzed")
     BidAttachmentResponse toAttachmentResponse(BidAttachment attachment);
+
+    @Mapping(source = "grade.displayText", target = "displayText")
+    MatchResultResponse toMatchResultResponse(BidMatchResult matchResult);
 
     @Mapping(source = "notice.id", target = "id")
     @Mapping(source = "notice.externalNoticeId", target = "externalNoticeId")
@@ -36,5 +41,6 @@ public interface BidNoticeMapper {
     @Mapping(source = "notice.status", target = "status")
     @Mapping(source = "notice.collectedAt", target = "collectedAt")
     @Mapping(source = "attachmentResponses", target = "attachments")
-    BidNoticeDetailResponse toDetailResponse(BidNotice notice, List<BidAttachmentResponse> attachmentResponses);
+    @Mapping(source = "matchResult", target = "matchResult")
+    BidNoticeDetailResponse toDetailResponse(BidNotice notice, List<BidAttachmentResponse> attachmentResponses, BidMatchResult matchResult);
 }

@@ -4,6 +4,8 @@ import com.bidradar.bid.domain.BidStatus;
 import com.bidradar.bid.domain.QBidNotice;
 import com.bidradar.bid.dto.query.BidSortType;
 import com.bidradar.bid.dto.response.BidNoticeSummaryResponse;
+import com.bidradar.bid.dto.response.MatchResultSummaryResponse;
+import com.bidradar.match.domain.QBidMatchResult;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
 import com.querydsl.core.types.Projections;
@@ -23,10 +25,12 @@ public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
     private static final QBidNotice bid = QBidNotice.bidNotice;
+    private static final QBidMatchResult matchResult = QBidMatchResult.bidMatchResult;
 
     @Override
     public Page<BidNoticeSummaryResponse> search(BidSearchCondition condition, Pageable pageable) {
         BooleanBuilder where = buildWhere(condition);
+        BooleanBuilder matchJoinCondition = buildMatchJoinCondition(condition);
 
         List<BidNoticeSummaryResponse> content = queryFactory
                 .select(Projections.constructor(BidNoticeSummaryResponse.class,
@@ -38,9 +42,14 @@ public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
                         bid.bidType,
                         bid.status,
                         bid.bidDeadline,
-                        bid.publishedAt
+                        bid.publishedAt,
+                        Projections.constructor(MatchResultSummaryResponse.class,
+                                matchResult.totalScore,
+                                matchResult.grade
+                        )
                 ))
                 .from(bid)
+                .leftJoin(matchResult).on(matchJoinCondition)
                 .where(where)
                 .orderBy(orderBy(condition.sort()))
                 .offset(pageable.getOffset())
@@ -50,6 +59,7 @@ public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
         long total = queryFactory
                 .select(bid.count())
                 .from(bid)
+                .leftJoin(matchResult).on(matchJoinCondition)
                 .where(where)
                 .fetchOne();
 
@@ -104,13 +114,27 @@ public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
             LocalDateTime deadline = LocalDateTime.now().plusDays(condition.deadlineDays());
             builder.and(bid.bidDeadline.loe(deadline));
         }
+        if (condition.grade() != null) {
+            builder.and(matchResult.grade.eq(condition.grade()));
+        }
         return builder;
     }
 
-    private OrderSpecifier<?> orderBy(BidSortType sort) {
+    private BooleanBuilder buildMatchJoinCondition(BidSearchCondition condition) {
+        BooleanBuilder builder = new BooleanBuilder(matchResult.bidNotice.id.eq(bid.id));
+        if (condition.companyId() != null) {
+            builder.and(matchResult.company.id.eq(condition.companyId()));
+        } else {
+            builder.and(matchResult.company.id.isNull());
+        }
+        return builder;
+    }
+
+    private OrderSpecifier<?>[] orderBy(BidSortType sort) {
         return switch (sort) {
-            case DEADLINE -> bid.bidDeadline.asc();
-            case SCORE, LATEST -> bid.publishedAt.desc();
+            case DEADLINE -> new OrderSpecifier<?>[]{bid.bidDeadline.asc()};
+            case SCORE -> new OrderSpecifier<?>[]{matchResult.totalScore.desc().nullsLast(), bid.publishedAt.desc(), bid.id.desc()};
+            case LATEST -> new OrderSpecifier<?>[]{bid.publishedAt.desc()};
         };
     }
 }
