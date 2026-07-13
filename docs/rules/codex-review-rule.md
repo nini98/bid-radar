@@ -66,13 +66,15 @@ curl -s -H "Authorization: Bearer $BID_RADAR_GH_PR_READ_TOKEN" \
   "https://api.github.com/repos/nini98/bid-radar/issues/{PR번호}/reactions?per_page=100"
 ```
 
-push 시각 이후의 `created_at`을 가진 항목이 있는지로 판단하되, 아래 두 조건까지 함께 확인한다 — 같은 시간대에 사람이 남긴 코멘트/리액션을 자동 응답으로 오판하지 않기 위해서다.
+코멘트와 리액션은 신뢰도가 다르므로 판단 방식을 구분한다.
 
-- 코멘트: `user.login`이 `chatgpt-codex-connector[bot]`인 것만 Codex 응답으로 간주한다.
-- 리액션: `user.login`이 `chatgpt-codex-connector[bot]`이고 `content`가 `+1`인 것만 "findings 없음"으로 간주한다.
+- **코멘트**: `user.login`이 `chatgpt-codex-connector[bot]`이면서 `created_at`이 push 시각 이후인 것이 있으면 findings로 간주한다. 코멘트는 리뷰마다 새 리소스로 생성되므로 이 기준이 그대로 신뢰 가능하다.
+- **리액션은 push 시각 이후 `created_at`으로 판단하지 않는다.** GitHub Reactions API는 같은 사용자가 같은 `content`(`+1`)를 다시 남기면 새 항목을 만들지 않고 기존 리액션을 그대로 반환하므로, 한 번이라도 Codex 봇의 `+1`이 남은 PR에서는 이후 push가 findings 없이 끝나도 `created_at`이 갱신되지 않는다. 대신:
+  - PR에 Codex 봇의 `+1` 리액션이 **아직 하나도 없다면**, push 이후 새로 생긴 `+1`(`user.login`이 봇)을 "findings 없음" 확인 신호로 쓴다.
+  - PR에 Codex 봇의 `+1` 리액션이 **이미 존재한다면**, 리액션은 더 이상 신호로 쓰지 않는다. 대신 3번 항목의 대기 시간 동안 push 시각 이후의 새 봇 코멘트가 끝내 생기지 않으면, 그 자체를 "findings 없음"으로 간주한다.
 
-3. 수 분(10분 이상) 기다려도 코멘트도 리액션도 없으면, 그때 `gh pr comment {PR번호} --body "@codex review"`로 재리뷰를 직접 트리거한다 (`gh pr comment`는 `.claude/settings.json`에서 막혀있지 않음). 트리거 후에도 위 2번 방식으로 확인한다.
-4. findings가 있으면 다시 1번으로 돌아가고, 없으면(코멘트 없음 + 👍 리액션 확인) 종료한다.
+3. 수 분(10분 이상) 기다려도 push 시각 이후의 새 봇 코멘트가 없고, 아직 봇의 `+1` 리액션도 없다면(PR 최초 리뷰인 경우), 그때 `gh pr comment {PR번호} --body "@codex review"`로 재리뷰를 직접 트리거한다 (`gh pr comment`는 `.claude/settings.json`에서 막혀있지 않음). 트리거 후에도 위 2번 방식으로 확인한다.
+4. findings가 있으면 다시 1번으로 돌아가고, 없으면(대기 후에도 push 시각 이후 새 봇 코멘트가 없음) 종료한다.
 
 ---
 
