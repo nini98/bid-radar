@@ -92,6 +92,7 @@ bid-radar/
 | AI Worker 코드 완료 후 | `docs/rules/ai-worker/ai-worker-review-rule.md` |
 | Frontend 작업 시 | `docs/rules/frontend/frontend-rule.md` |
 | Frontend 코드 완료 후 | `docs/rules/frontend/frontend-review-rule.md` |
+| PR push 후 Codex 리뷰 확인 시 | `docs/rules/codex-review-rule.md` |
 
 ---
 
