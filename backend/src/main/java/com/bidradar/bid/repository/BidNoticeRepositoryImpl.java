@@ -4,7 +4,7 @@ import com.bidradar.bid.domain.BidStatus;
 import com.bidradar.bid.domain.QBidNotice;
 import com.bidradar.bid.dto.query.BidSortType;
 import com.bidradar.bid.dto.response.BidNoticeSummaryResponse;
-import com.bidradar.bid.dto.response.MatchResultResponse;
+import com.bidradar.bid.dto.response.MatchResultSummaryResponse;
 import com.bidradar.match.domain.QBidMatchResult;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.OrderSpecifier;
@@ -43,15 +43,9 @@ public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
                         bid.status,
                         bid.bidDeadline,
                         bid.publishedAt,
-                        Projections.constructor(MatchResultResponse.class,
+                        Projections.constructor(MatchResultSummaryResponse.class,
                                 matchResult.totalScore,
-                                matchResult.grade,
-                                matchResult.scoreTech,
-                                matchResult.scoreBusiness,
-                                matchResult.scoreBudget,
-                                matchResult.scoreRegion,
-                                matchResult.matchedKeywords,
-                                matchResult.scoreReason
+                                matchResult.grade
                         )
                 ))
                 .from(bid)
@@ -139,7 +133,7 @@ public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
     private OrderSpecifier<?> orderBy(BidSortType sort) {
         return switch (sort) {
             case DEADLINE -> bid.bidDeadline.asc();
-            case SCORE -> matchResult.totalScore.desc();
+            case SCORE -> matchResult.totalScore.desc().nullsLast();
             case LATEST -> bid.publishedAt.desc();
         };
     }

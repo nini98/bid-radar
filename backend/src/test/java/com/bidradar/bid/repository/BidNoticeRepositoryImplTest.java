@@ -136,6 +136,29 @@ class BidNoticeRepositoryImplTest extends IntegrationTestBase {
                 .containsExactly(highScoreBid.getId(), lowScoreBid.getId());
     }
 
+    @Test
+    @DisplayName("sort=score 정렬 시 매치 결과가 없는 공고는 점수가 있는 공고보다 뒤로 밀린다")
+    void sort_score가_매치결과_없는_공고를_뒤로_보낸다() {
+        // given
+        BidNotice unmatchedBid = entityManager.persistAndFlush(createBid("20250107"));
+        BidNotice matchedBid = entityManager.persistAndFlush(createBid("20250108"));
+        Company company = createCompany("owner5@bidradar.com");
+        entityManager.persistAndFlush(BidMatchResult.create(
+                matchedBid, company, new BigDecimal("60.00"), MatchGrade.RECOMMENDED,
+                null, null, null, null, null, null));
+        entityManager.clear();
+
+        BidSearchCondition condition = new BidSearchCondition(
+                null, null, null, null, null, null, company.getId(), BidSortType.SCORE);
+
+        // when
+        Page<BidNoticeSummaryResponse> page = bidNoticeRepository.search(condition, PageRequest.of(0, 20));
+
+        // then
+        assertThat(page.getContent()).extracting(BidNoticeSummaryResponse::id)
+                .containsExactly(matchedBid.getId(), unmatchedBid.getId());
+    }
+
     private BidNotice createBid(String externalNoticeId) {
         return BidNotice.create(new BidNoticeCreateCommand(
                 externalNoticeId, "G2B", "테스트 공고 " + externalNoticeId, "국토교통부",

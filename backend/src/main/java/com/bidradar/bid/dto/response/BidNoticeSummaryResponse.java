@@ -14,7 +14,7 @@ public record BidNoticeSummaryResponse(
         BidStatus status,
         LocalDateTime bidDeadline,
         LocalDateTime publishedAt,
-        MatchResultResponse matchResult
+        MatchResultSummaryResponse matchResult
 ) {
     public BidNoticeSummaryResponse {
         // QueryDSL의 nested constructor projection은 LEFT JOIN 미스여도 필드가 전부 null인
