@@ -49,32 +49,51 @@ source ~/.zshrc
 
 **Codex GitHub App의 push 자동 트리거는 간헐적으로만 작동한다** (2026-07-13 실측: PR#11에서 fix push 4건 중 2건만 자동 반응, 나머지 2건은 완전 침묵 — OpenAI 쪽의 알려진 버그, [openai/codex#15477](https://github.com/openai/codex/issues/15477) 참고). "PR을 열면 항상 자동 리뷰, 이후 push엔 항상 무반응"이 아니라 **push마다 결과가 다를 수 있다는 전제로 접근한다.**
 
+Codex 앱은 이 저장소에 check run이나 commit status를 남기지 않는다(`gh pr checks`, `statusCheckRollup` 둘 다 항상 빈 값 — 2026-07-13 확인). 즉 "이번 push를 실제로 실행했는지"를 확정해주는 API 신호는 없고, 아래 세 엔드포인트로 간접 판단할 수밖에 없다.
+
 전체 흐름:
 
-1. Claude Code가 fix 커밋을 만들어 push한다.
-2. **먼저 자동 반응이 왔는지 확인한다.** Codex는 findings가 있으면 인라인 리뷰 코멘트를 남기고, **findings가 없으면 코멘트 없이 PR에 👍(`+1`) 리액션만 남긴다.** 그래서 반드시 두 엔드포인트를 모두 확인해야 한다 — 코멘트만 확인하면 "리뷰는 자동으로 됐는데 이상 없음"인 경우를 "자동 트리거 실패"로 잘못 판단하게 된다.
+1. Claude Code가 fix 커밋을 만들어 push한다. 이때 push 시각과 push 후 HEAD 커밋 SHA(`git rev-parse HEAD`)를 기록해둔다.
+2. **세 엔드포인트를 모두 확인한다.** Codex는 findings가 있으면 인라인 리뷰 코멘트를, 실행 오류(트리거 실패·quota 등)가 있으면 PR 대화 코멘트를 남기고, **findings가 없으면 코멘트 없이 PR에 👍(`+1`) 리액션만 남긴다.**
 
 ```bash
-# 인라인 리뷰 코멘트 (findings가 있을 때) — per_page 기본값 30이라 오래된 PR은 최신순 정렬 필수
-curl -s -H "Authorization: Bearer $BID_RADAR_GH_PR_READ_TOKEN" \
-  -H "Accept: application/vnd.github+json" \
-  "https://api.github.com/repos/nini98/bid-radar/pulls/{PR번호}/comments?sort=created&direction=desc&per_page=100"
+# 공통: HTTP 상태코드까지 확인 (curl -s만 쓰면 4xx/5xx도 JSON 오류 본문을 그냥 출력해서
+# "findings/코멘트 없음"과 "API 호출 자체가 실패함"을 구분 못 하게 된다)
+fetch() {
+  local url="$1"
+  local resp status
+  resp=$(curl -s -w '\n%{http_code}' -H "Authorization: Bearer $BID_RADAR_GH_PR_READ_TOKEN" \
+    -H "Accept: application/vnd.github+json" "$url")
+  status=$(tail -n1 <<< "$resp")
+  if [ "$status" -ge 400 ]; then
+    echo "API 오류 ($status): $url" >&2
+    return 1
+  fi
+  sed '$d' <<< "$resp"
+}
 
-# PR(issue) 리액션 (findings가 없을 때 👍만 남음)
-curl -s -H "Authorization: Bearer $BID_RADAR_GH_PR_READ_TOKEN" \
-  -H "Accept: application/vnd.github+json" \
-  "https://api.github.com/repos/nini98/bid-radar/issues/{PR번호}/reactions?per_page=100"
+# 1) 인라인 리뷰 코멘트 (findings) — per_page 기본값 30이라 오래된 PR은 최신순 정렬 필수
+fetch "https://api.github.com/repos/nini98/bid-radar/pulls/{PR번호}/comments?sort=created&direction=desc&per_page=100"
+
+# 2) PR 대화 코멘트 (실행 오류 메시지 등, review comment와 다른 엔드포인트)
+fetch "https://api.github.com/repos/nini98/bid-radar/issues/{PR번호}/comments?sort=created&direction=desc&per_page=100"
+
+# 3) PR(issue) 리액션 (findings가 없을 때 👍만 남음)
+fetch "https://api.github.com/repos/nini98/bid-radar/issues/{PR번호}/reactions?per_page=100"
 ```
 
-코멘트와 리액션은 신뢰도가 다르므로 판단 방식을 구분한다.
+`fetch`가 오류를 리턴하면(1번 curl이 실패하면) 그 자체를 "findings/코멘트 없음"으로 취급하지 않고 호출 자체를 실패로 중단한다.
 
-- **코멘트**: `user.login`이 `chatgpt-codex-connector[bot]`이면서 `created_at`이 push 시각 이후인 것이 있으면 findings로 간주한다. 코멘트는 리뷰마다 새 리소스로 생성되므로 이 기준이 그대로 신뢰 가능하다.
-- **리액션은 push 시각 이후 `created_at`으로 판단하지 않는다.** GitHub Reactions API는 같은 사용자가 같은 `content`(`+1`)를 다시 남기면 새 항목을 만들지 않고 기존 리액션을 그대로 반환하므로, 한 번이라도 Codex 봇의 `+1`이 남은 PR에서는 이후 push가 findings 없이 끝나도 `created_at`이 갱신되지 않는다. 대신:
-  - PR에 Codex 봇의 `+1` 리액션이 **아직 하나도 없다면**, push 이후 새로 생긴 `+1`(`user.login`이 봇)을 "findings 없음" 확인 신호로 쓴다.
-  - PR에 Codex 봇의 `+1` 리액션이 **이미 존재한다면**, 리액션은 더 이상 신호로 쓰지 않는다. 대신 3번 항목의 대기 시간 동안 push 시각 이후의 새 봇 코멘트가 끝내 생기지 않으면, 그 자체를 "findings 없음"으로 간주한다.
+세 엔드포인트는 판단 방식이 다르다.
 
-3. 수 분(10분 이상) 기다려도 push 시각 이후의 새 봇 코멘트가 없고, 아직 봇의 `+1` 리액션도 없다면(PR 최초 리뷰인 경우), 그때 `gh pr comment {PR번호} --body "@codex review"`로 재리뷰를 직접 트리거한다 (`gh pr comment`는 `.claude/settings.json`에서 막혀있지 않음). 트리거 후에도 위 2번 방식으로 확인한다.
-4. findings가 있으면 다시 1번으로 돌아가고, 없으면(대기 후에도 push 시각 이후 새 봇 코멘트가 없음) 종료한다.
+- **인라인 리뷰 코멘트**: `user.login`이 `chatgpt-codex-connector[bot]`이면서 `commit_id`가 1번에서 기록한 push 후 HEAD SHA와 일치하는 것이 있으면 findings로 간주한다. `created_at`만으로는 지연 실행된 이전 커밋 대상 코멘트와 구분이 안 되므로, `commit_id` 일치를 기준으로 쓴다.
+- **PR 대화 코멘트**: `user.login`이 봇이고 `created_at`이 push 시각 이후인 것이 있으면 내용을 읽고 실행 오류인지 확인한다 (대화 코멘트는 커밋에 안 묶이므로 `commit_id`가 없다 — `created_at`으로만 판단).
+- **리액션은 "findings 없음"의 결정적 신호로 쓰지 않는다.** GitHub Reactions API는 같은 사용자가 같은 `content`(`+1`)를 다시 남기면 새 항목을 만들지 않고 기존 리액션을 그대로 반환하므로, 한 번이라도 Codex 봇의 `+1`이 남은 PR에서는 이후 push가 findings 없이 끝나도 `created_at`이 갱신되지 않는다. 리액션은 "이 PR이 과거에 최소 한 번은 리뷰된 적이 있다"는 참고 정보로만 쓴다.
+
+3. 수 분(10분 이상) 기다려도 위 기준의 새 리뷰 코멘트/대화 코멘트가 없으면, **기존에 봇의 `+1` 리액션이 있었는지와 무관하게** `gh pr comment {PR번호} --body "@codex review"`로 재리뷰를 직접 트리거한다 (`gh pr comment`는 `.claude/settings.json`에서 막혀있지 않음). 트리거 후 다시 수 분 기다렸다가 위 2번 방식으로 재확인한다.
+4. findings나 실행 오류가 있으면 처리 후 다시 1번으로 돌아간다. 재트리거 후에도 새 리뷰 코멘트/대화 코멘트가 끝내 없다면:
+   - 이 PR에 봇의 `+1` 리액션이 **한 번도 없었다면** — 두 번의 시도(자동 + 수동)에도 응답이 전혀 없었다는 뜻이므로, 종료하지 말고 사용자에게 상황을 보고하고 GitHub PR 페이지에서 직접 확인해달라고 요청한다.
+   - 이 PR에 봇의 `+1` 리액션이 **이미 있었다면** — "이번 push도 클린해서 조용한 것"과 "재트리거까지 했는데도 실행 자체가 안 된 것"을 API로는 구분할 수 없는 한계 상황이다. 자동으로 종료하지 않고, 이 사실을 사용자에게 알린 뒤 GitHub PR 페이지에서 최신 커밋 옆 리뷰 상태를 직접 확인해달라고 요청한다.
 
 ---
 
