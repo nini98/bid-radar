@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useBidList } from '../hooks/useBidList';
 import { useMe, useLogout } from '../hooks/useAuth';
 import BidCard from '../components/bid/BidCard';
@@ -38,6 +39,9 @@ export default function BidListPage() {
           <span className="font-bold text-gray-900">Bid Radar</span>
           <div className="flex items-center gap-3 text-sm text-gray-500">
             {user && <span>{user.name}</span>}
+            <Link to="/company/profile" className="text-gray-400 hover:text-gray-700">
+              회사 프로필
+            </Link>
             <button
               onClick={() => logout()}
               disabled={isLoggingOut}

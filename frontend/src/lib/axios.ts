@@ -25,8 +25,9 @@ instance.interceptors.response.use(
     return body.data;
   },
   (error) => {
-    const message =
-      error.response?.data?.header?.resultMessage ?? error.message ?? '오류가 발생했습니다.';
+    const body = error.response?.data;
+    const detail = typeof body?.data === 'string' && body.data.trim() ? body.data : null;
+    const message = detail ?? body?.header?.resultMessage ?? error.message ?? '오류가 발생했습니다.';
     return Promise.reject(new Error(message));
   }
 );
