@@ -60,14 +60,16 @@ Codex 앱은 이 저장소에 check run이나 commit status를 남기지 않는�
 ```bash
 # 공통: HTTP 상태코드까지 확인 (curl -s만 쓰면 4xx/5xx도 JSON 오류 본문을 그냥 출력해서
 # "findings/코멘트 없음"과 "API 호출 자체가 실패함"을 구분 못 하게 된다)
+# 변수명은 http_status를 쓴다 — zsh에서 status는 최근 종료 코드를 담는 읽기 전용 특수 변수라,
+# 로컬 변수명으로 쓰면 "read-only variable: status" 오류로 함수 전체가 깨진다.
 fetch() {
   local url="$1"
-  local resp status
+  local resp http_status
   resp=$(curl -s -w '\n%{http_code}' -H "Authorization: Bearer $BID_RADAR_GH_PR_READ_TOKEN" \
     -H "Accept: application/vnd.github+json" "$url")
-  status=$(tail -n1 <<< "$resp")
-  if [ "$status" -ge 400 ]; then
-    echo "API 오류 ($status): $url" >&2
+  http_status=$(tail -n1 <<< "$resp")
+  if [ "$http_status" -ge 400 ]; then
+    echo "API 오류 ($http_status): $url" >&2
     return 1
   fi
   sed '$d' <<< "$resp"
