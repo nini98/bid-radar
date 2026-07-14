@@ -87,7 +87,7 @@ function buildFormState(profile: CompanyProfile | null | undefined): FormState {
 export default function CompanyProfilePage() {
   const navigate = useNavigate();
   const { data: profile, isLoading, isError } = useCompanyProfile();
-  const { techTags, businessAreas, isLoading: isCodesLoading } = useCodes();
+  const { techTags, businessAreas, isLoading: isCodesLoading, isError: isCodesError } = useCodes();
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -104,11 +104,11 @@ export default function CompanyProfilePage() {
         <div className="max-w-2xl mx-auto px-4 py-16 text-center text-gray-400">불러오는 중...</div>
       )}
 
-      {isError && (
+      {(isError || isCodesError) && (
         <div className="max-w-2xl mx-auto px-4 py-16 text-center text-gray-500">프로필을 불러오지 못했습니다.</div>
       )}
 
-      {!isLoading && !isCodesLoading && !isError && (
+      {!isLoading && !isCodesLoading && !isError && !isCodesError && (
         <CompanyProfileForm profile={profile ?? null} techTags={techTags} businessAreas={businessAreas} />
       )}
     </div>
