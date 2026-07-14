@@ -22,11 +22,11 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
+import org.springframework.security.web.session.SessionManagementFilter;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -68,7 +68,8 @@ public class SecurityConfig {
             // 쓰지 않는다. 이 필터가 매 요청마다 토큰을 강제로 resolve해서 쿠키가 항상 내려가게 한다.
             // SessionManagementFilter(우리 JwtAuthenticationFilter가 매 요청마다 SecurityContext를
             // 새로 설정하는 stateless 구조 특성상, CsrfAuthenticationStrategy가 "매 요청을 새 로그인"으로
-            // 오인해 XSRF-TOKEN 쿠키를 삭제하는 부작용이 있음)보다 뒤에 위치시켜 그 삭제를 덮어쓴다.
+            // 오인해 XSRF-TOKEN 쿠키를 삭제하는 부작용이 있음) 바로 뒤에 위치시켜 그 삭제를 덮어쓴다.
+            // AuthorizationFilter보다 앞에 둬서, 인가 실패(401/403) 응답에도 갱신된 쿠키가 실리게 한다.
             .addFilterAfter(new OncePerRequestFilter() {
                 @Override
                 protected void doFilterInternal(HttpServletRequest req, HttpServletResponse res,
@@ -79,7 +80,7 @@ public class SecurityConfig {
                     }
                     chain.doFilter(req, res);
                 }
-            }, AuthorizationFilter.class)
+            }, SessionManagementFilter.class)
             .exceptionHandling(ex -> ex
                 .authenticationEntryPoint((request, response, e) -> {
                     response.setStatus(HttpStatus.UNAUTHORIZED.value());
