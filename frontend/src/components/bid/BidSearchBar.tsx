@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { BidSortType } from '../../types/bid';
+import { REGIONS } from '../../constants/region';
 
 interface Props {
   keyword: string;
@@ -16,8 +17,6 @@ const SORT_OPTIONS: { label: string; value: BidSortType }[] = [
   { label: '마감일순', value: 'DEADLINE' },
   { label: '적합도순', value: 'SCORE' },
 ];
-
-const REGIONS = ['', '서울특별시', '경기도', '인천광역시', '부산광역시', '대구광역시', '대전광역시', '광주광역시', '울산광역시', '세종특별자치시', '강원도', '충청북도', '충청남도', '전라북도', '전라남도', '경상북도', '경상남도', '제주특별자치도'];
 
 export default function BidSearchBar({ keyword, sort, region, onKeywordChange, onSortChange, onRegionChange, onSearch }: Props) {
   const [inputValue, setInputValue] = useState(keyword);
@@ -55,7 +54,7 @@ export default function BidSearchBar({ keyword, sort, region, onKeywordChange, o
           className="text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
         >
           <option value="">전체 지역</option>
-          {REGIONS.filter(Boolean).map((r) => (
+          {REGIONS.map((r) => (
             <option key={r} value={r}>{r}</option>
           ))}
         </select>
