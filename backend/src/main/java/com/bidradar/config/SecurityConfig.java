@@ -7,7 +7,6 @@ import com.bidradar.common.response.ResultCode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
@@ -41,14 +40,17 @@ public class SecurityConfig {
 
     private final JwtProvider jwtProvider;
     private final ObjectMapper objectMapper;
+    private final CookieProperties cookieProperties;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         CsrfTokenRequestAttributeHandler csrfHandler = new CsrfTokenRequestAttributeHandler();
+        CookieCsrfTokenRepository csrfTokenRepository = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        csrfTokenRepository.setCookieCustomizer(cookie -> cookie.secure(cookieProperties.isSecure()));
 
         http
             .csrf(csrf -> csrf
-                .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
+                .csrfTokenRepository(csrfTokenRepository)
                 .csrfTokenRequestHandler(csrfHandler)
                 .ignoringRequestMatchers("/api/auth/signup", "/api/auth/login")
             )
@@ -73,9 +75,7 @@ public class SecurityConfig {
                                                 FilterChain chain) throws ServletException, IOException {
                     CsrfToken token = (CsrfToken) req.getAttribute(CsrfToken.class.getName());
                     if (token != null) {
-                        Cookie cookie = new Cookie("XSRF-TOKEN", token.getToken());
-                        cookie.setPath("/");
-                        res.addCookie(cookie);
+                        csrfTokenRepository.saveToken(token, req, res);
                     }
                     chain.doFilter(req, res);
                 }
