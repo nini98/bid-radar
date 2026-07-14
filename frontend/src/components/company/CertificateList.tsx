@@ -10,7 +10,7 @@ export default function CertificateList({ items, onChange }: Props) {
 
   const add = () => {
     const value = input.trim();
-    if (!value) return;
+    if (!value || items.includes(value)) return;
     onChange([...items, value]);
     setInput('');
   };

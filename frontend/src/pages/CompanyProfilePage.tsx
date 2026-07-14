@@ -268,7 +268,7 @@ function Field({ label, value, onChange, type = 'text', required, textarea }: Fi
           value={value}
           onChange={(e) => onChange(e.target.value)}
           rows={3}
-          className="w-full text-sm border border-gray-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          className="w-full text-sm border border-gray-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400 scroll-mt-16"
         />
       ) : (
         <input
@@ -276,7 +276,7 @@ function Field({ label, value, onChange, type = 'text', required, textarea }: Fi
           value={value}
           onChange={(e) => onChange(e.target.value)}
           required={required}
-          className="w-full text-sm border border-gray-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          className="w-full text-sm border border-gray-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400 scroll-mt-16"
         />
       )}
     </div>

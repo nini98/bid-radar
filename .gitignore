@@ -35,3 +35,6 @@ ai-worker/.pytest_cache/
 # OS
 .DS_Store
 Thumbs.db
+
+# Playwright MCP (QA artifacts)
+.playwright-mcp/

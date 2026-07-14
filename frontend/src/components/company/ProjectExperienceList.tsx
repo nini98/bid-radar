@@ -24,25 +24,25 @@ export default function ProjectExperienceList({ items, onChange }: Props) {
   return (
     <div>
       <h2 className="text-sm font-semibold text-gray-900 mb-3">프로젝트 경험</h2>
-      <div className="flex gap-2 mb-2">
+      <div className="flex flex-col sm:flex-row gap-2 mb-2">
         <input
           type="text"
           value={projectType}
           onChange={(e) => setProjectType(e.target.value)}
           placeholder="프로젝트 구분 (예: 공공 SI)"
-          className="w-40 text-sm border border-gray-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          className="w-full sm:w-40 text-sm border border-gray-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
         />
         <input
           type="text"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="프로젝트 설명"
-          className="flex-1 text-sm border border-gray-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+          className="w-full sm:flex-1 text-sm border border-gray-200 rounded px-3 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
         />
         <button
           type="button"
           onClick={add}
-          className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200"
+          className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 shrink-0"
         >
           추가
         </button>
