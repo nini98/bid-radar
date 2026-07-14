@@ -67,12 +67,22 @@ instance.interceptors.request.use((config) => {
 Response interceptor에서 `data.data`를 unwrap하여 API 함수는 실제 데이터만 반환한다.
 `resultCode !== '200'`이면 에러로 처리한다.
 
+에러 응답의 `header.resultMessage`는 고정 문구인 경우가 있다 (예: 검증 실패 시 항상 "입력한 값이 유효하지 않습니다."). 백엔드가 `data`에 필드별 상세 메시지를 문자열로 담아주는 경우가 있으므로, `data`가 문자열이면 우선 사용하고 없으면 `resultMessage`로 폴백한다.
+
 ```ts
-instance.interceptors.response.use((res) => {
-  const body = res.data;
-  if (body.header.resultCode !== '200') throw new Error(body.header.resultMessage);
-  return body.data;
-});
+instance.interceptors.response.use(
+  (res) => {
+    const body = res.data;
+    if (body.header.resultCode !== '200') throw new Error(body.header.resultMessage);
+    return body.data;
+  },
+  (error) => {
+    const body = error.response?.data;
+    const detail = typeof body?.data === 'string' && body.data.trim() ? body.data : null;
+    const message = detail ?? body?.header?.resultMessage ?? error.message ?? '오류가 발생했습니다.';
+    return Promise.reject(new Error(message));
+  }
+);
 ```
 
 ### 4-3. API 함수 위치
@@ -92,6 +102,17 @@ queryKey는 도메인 + 파라미터를 배열로 구성한다.
 ['bids', params]       // 목록
 ['bids', bidId]        // 단건
 ['auth', 'me']         // 인증
+```
+
+**로그인 사용자 개인 데이터("내 정보" 성격의 쿼리)는 반드시 사용자 id를 키에 포함한다.** `['company', 'me']`처럼 사용자와 무관하게 고정된 키를 쓰면, 같은 브라우저에서 로그아웃 후 다른 사용자로 로그인했을 때 staleTime 내에 이전 사용자의 데이터가 그대로 노출되거나 그 값이 다음 저장 요청에 그대로 실릴 수 있다.
+
+```ts
+const { data: user } = useMe();
+useQuery({
+  queryKey: ['company', 'me', user?.id],
+  queryFn: fetchCompanyProfile,
+  enabled: !!user,
+});
 ```
 
 ### 5-2. 기본 설정
@@ -165,6 +186,8 @@ export interface BidNoticeSummary {
   - 적합도 80점↑: `text-green-600` / `bg-green-50`
   - 적합도 60~79점: `text-orange-500` / `bg-orange-50`
   - 적합도 60점↓ / 미분석: `text-gray-400` / `bg-gray-50`
+- sticky/fixed 헤더가 있는 화면의 폼 요소에는 `scroll-mt-*`를 적용한다. 브라우저 네이티브 검증(필수값 미입력, 타입 불일치 등) 실패 시 해당 요소로 스크롤되는데, `scroll-mt` 없이는 헤더에 가려 사용자가 어떤 필드가 문제인지 보지 못한다.
+- (모바일 지원이 실제 목표인 프로덕트에 한해) 고정 width 클래스(`w-40` 등)를 `flex` row에 쓸 때는 좁은 뷰포트에서 넘치지 않도록 `sm:` 프리픽스로 감싼다 (`w-full sm:w-40` + `flex-col sm:flex-row`). **Bid Radar는 데스크톱 전용 서비스로 모바일 지원이 목표가 아니므로 이 항목은 적용하지 않는다** — 이 문서를 다른(모바일 지원) 프로젝트에서 참고할 때만 적용한다.
 
 ---
 
@@ -174,6 +197,7 @@ export interface BidNoticeSummary {
 - 에러 상태: 에러 메시지와 재시도 버튼을 함께 표시한다
 - 빈 상태: "검색 결과가 없습니다" 등 명확한 안내 UI를 표시한다
 - React Query의 `isLoading`, `isError`, `data` 상태를 순서대로 분기 처리한다
+- 한 화면(컴포넌트)에서 여러 쿼리 훅을 조합해 쓸 경우, **모든** 훅의 `isError`(그리고 `isLoading`)를 반영해 분기한다. 일부 훅의 에러만 처리하면, 다른 훅이 실패해도 화면이 정상 상태처럼 렌더링되어 사용자가 빈 데이터를 저장 가능한 상태로 오인할 수 있다.
 
 ---
 
@@ -191,3 +215,4 @@ export interface BidNoticeSummary {
 - Page는 조합하고, Component는 재사용한다
 - HTTP는 반드시 axios 인스턴스를 통한다. CSRF 헤더와 credentials는 자동으로 처리한다
 - 서버 상태는 React Query로, UI 상태는 useState로 관리한다
+- "내 정보" 쿼리는 queryKey에 사용자 id를 포함한다. 여러 쿼리를 조합해 쓸 때는 모든 isError를 반영한다
