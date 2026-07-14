@@ -123,6 +123,7 @@ public class CompanyProfileService {
 
     private void replaceTechTags(Company company, List<TechTag> techTags) {
         companyTechTagRepository.deleteAllByCompanyId(company.getId());
+        companyTechTagRepository.flush();
         List<CompanyTechTag> entities = techTags.stream()
                 .map(techTag -> CompanyTechTag.create(company, techTag))
                 .toList();
@@ -131,6 +132,7 @@ public class CompanyProfileService {
 
     private void replaceBusinessAreas(Company company, List<BusinessArea> businessAreas) {
         companyBusinessAreaRepository.deleteAllByCompanyId(company.getId());
+        companyBusinessAreaRepository.flush();
         List<CompanyBusinessArea> entities = businessAreas.stream()
                 .map(businessArea -> CompanyBusinessArea.create(company, businessArea))
                 .toList();
@@ -139,6 +141,7 @@ public class CompanyProfileService {
 
     private void replaceCertificates(Company company, List<String> certificateNames) {
         companyCertificateRepository.deleteAllByCompanyId(company.getId());
+        companyCertificateRepository.flush();
         if (certificateNames == null) {
             return;
         }
@@ -150,6 +153,7 @@ public class CompanyProfileService {
 
     private void replaceProjectExperiences(Company company, List<ProjectExperienceRequest> experiences) {
         companyProjectExperienceRepository.deleteAllByCompanyId(company.getId());
+        companyProjectExperienceRepository.flush();
         if (experiences == null) {
             return;
         }
@@ -161,6 +165,7 @@ public class CompanyProfileService {
 
     private void replaceBidPreference(Company company, BidPreferenceRequest bidPreference) {
         companyBidPreferenceRepository.deleteByCompanyId(company.getId());
+        companyBidPreferenceRepository.flush();
         if (bidPreference == null) {
             return;
         }
