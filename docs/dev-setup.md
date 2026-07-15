@@ -23,7 +23,8 @@ git clone <repo-url>
 cd bid-radar
 
 # 1) DB 실행 (로컬 기본값: bidradar/bidradar/bidradar, 5433 포트)
-docker compose -f infra/docker-compose.local.yml up -d
+# --wait: healthcheck 통과할 때까지 대기 (없으면 Flyway가 DB 준비 전에 붙어 간헐적으로 실패할 수 있음)
+docker compose -f infra/docker-compose.local.yml up -d --wait
 
 # 2) Backend 실행 (별도 터미널에서 — bootRun은 포그라운드로 계속 떠 있는다)
 cd backend
