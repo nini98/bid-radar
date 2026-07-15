@@ -41,6 +41,7 @@ Backend는 `bootRun`이 떠 있는 상태로 그대로 두고, **새 터미널�
 ```bash
 # 3) Frontend 실행 (새 터미널)
 cd bid-radar/frontend
+cp .env.example .env.local
 npm install
 npm run dev
 ```
