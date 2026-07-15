@@ -83,6 +83,7 @@ bid-radar/
 
 | 작업 | 읽을 Rule |
 |---|---|
+| 새 PC에서 개발 환경 셋업 시 | `docs/dev-setup.md` |
 | 커밋/푸시 시 | `docs/rules/git-rule.md` |
 | Task 수행 시 | `docs/rules/task-rule.md` |
 | 코드 완료 후 (공통 검토) | `docs/rules/self-review-rule.md` |
