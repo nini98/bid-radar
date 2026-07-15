@@ -86,6 +86,15 @@ Epic-3 착수 전이라 아직 코드/의존성이 없다 (`ai-worker/`는 빈 �
 
 ## 5. 자주 겪는 함정
 
-- `./gradlew: Permission denied` → `chmod +x backend/gradlew` (2절 참고)
+- `./gradlew: Permission denied` → `backend/` 안에서 `chmod +x ./gradlew` (2절 참고)
 - `docker compose` 포트 충돌(5433) → 다른 프로젝트의 postgres 컨테이너와 겹치는지 확인
 - G2B API 호출이 계속 실패 → `G2B_SERVICE_KEY` 미설정 또는 잘못된 키(디코딩 키를 넣은 경우가 흔한 실수 — encoding 키를 써야 한다)
+
+---
+
+## 6. WSL 참고
+
+Windows에서 WSL로 작업하는 경우 macOS/Linux와 명령어 자체는 동일하지만(POSIX 셸 기준), 아래 두 가지는 WSL에만 해당하는 함정이라 추가로 확인한다.
+
+- **Docker Desktop WSL2 통합**: Docker Desktop을 설치하는 것만으로는 WSL 안에서 `docker compose`가 데몬에 연결되지 않는다. Docker Desktop → Settings → Resources → WSL Integration에서 사용 중인 배포판(distro)에 통합을 켜야 한다.
+- **저장소는 WSL 파일시스템에 clone한다**: `/mnt/c/Users/...`(윈도우 드라이브)에 clone하면 파일 I/O가 크게 느려지고, `chmod +x ./gradlew`로 준 실행권한이 NTFS 쪽에서 제대로 유지되지 않는 경우가 있어 2절의 `Permission denied` 문제가 반복될 수 있다. `~/projects/bid-radar`처럼 WSL 안의 Linux 파일시스템에 clone할 것.
