@@ -25,7 +25,7 @@ cd bid-radar
 # 1) DB 실행 (로컬 기본값: bidradar/bidradar/bidradar, 5433 포트)
 docker compose -f infra/docker-compose.local.yml up -d
 
-# 2) Backend 실행
+# 2) Backend 실행 (별도 터미널에서 — bootRun은 포그라운드로 계속 떠 있는다)
 cd backend
 ./gradlew bootRun
 ```
@@ -36,9 +36,11 @@ cd backend
 chmod +x ./gradlew
 ```
 
+Backend는 `bootRun`이 떠 있는 상태로 그대로 두고, **새 터미널을 열어** 아래를 진행한다. 새 터미널은 어느 디렉터리에서 시작할지 알 수 없으므로 저장소 경로부터 다시 잡는다.
+
 ```bash
-# 3) Frontend 실행 (현재 backend/ 안에 있으므로 루트 기준 상대 경로로 이동)
-cd ../frontend
+# 3) Frontend 실행 (새 터미널)
+cd bid-radar/frontend
 npm install
 npm run dev
 ```
