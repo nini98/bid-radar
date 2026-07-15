@@ -12,7 +12,7 @@
 | GitHub CLI (`gh`) | PR 생성/조회 | clone 후 `gh auth login` 필요 |
 | Docker / Docker Compose | 로컬 PostgreSQL 실행 | `infra/docker-compose.local.yml` |
 | Java 21 | Backend 빌드/실행 | `backend/build.gradle`에 toolchain 21로 고정. 로컬에 21이 없으면 `./gradlew` 실행 시 자동 다운로드를 시도하나, 실패하면 직접 설치할 것 |
-| Node.js | Frontend 빌드/실행 | 버전 pin(`.nvmrc`, `engines`) 없음 — 20 LTS 이상 권장, 문제 생기면 이 표에 버전을 명시해서 업데이트할 것 |
+| Node.js | Frontend 빌드/실행 | `frontend/package-lock.json`의 `vite`/`@vitejs/plugin-react`가 `^20.19.0 \|\| >=22.12.0`을 요구함 (20.0~20.18은 엔진 요구사항 미충족). 저장소에 `.nvmrc`/`engines` pin은 아직 없으니 20.19+ 또는 22.12+ 사용할 것 |
 
 ---
 
