@@ -30,10 +30,10 @@ cd backend
 ./gradlew bootRun
 ```
 
-`./gradlew` 실행 시 `Permission denied`가 나면 실행권한이 없는 것이다 (PR#18에서 실제로 겪은 문제 — clone 방식이나 OS에 따라 실행권한 비트가 유실될 수 있다):
+`./gradlew` 실행 시 `Permission denied`가 나면 실행권한이 없는 것이다 (PR#18에서 실제로 겪은 문제 — clone 방식이나 OS에 따라 실행권한 비트가 유실될 수 있다). 위 순서대로라면 이미 `backend/` 안에 있으므로 상대 경로로 복구한다:
 
 ```bash
-chmod +x backend/gradlew
+chmod +x ./gradlew
 ```
 
 ```bash
