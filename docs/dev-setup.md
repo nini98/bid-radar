@@ -37,8 +37,8 @@ chmod +x ./gradlew
 ```
 
 ```bash
-# 3) Frontend 실행
-cd frontend
+# 3) Frontend 실행 (현재 backend/ 안에 있으므로 루트 기준 상대 경로로 이동)
+cd ../frontend
 npm install
 npm run dev
 ```
