@@ -36,11 +36,11 @@ cd backend
 chmod +x ./gradlew
 ```
 
-Backend는 `bootRun`이 떠 있는 상태로 그대로 두고, **새 터미널을 열어** 아래를 진행한다. 새 터미널은 어느 디렉터리에서 시작할지 알 수 없으므로 저장소 경로부터 다시 잡는다.
+Backend는 `bootRun`이 떠 있는 상태로 그대로 두고, **새 터미널을 열어** 아래를 진행한다. 새 터미널이 저장소 루트에서 열린다는 보장이 없으므로, 루트가 아니면 1절에서 clone한 경로로 먼저 이동한다.
 
 ```bash
-# 3) Frontend 실행 (새 터미널)
-cd bid-radar/frontend
+# 새 터미널 — 저장소 루트가 아니면 먼저 이동 (예: cd ~/bid-radar)
+cd frontend
 cp .env.example .env.local
 npm install
 npm run dev
