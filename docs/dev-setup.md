@@ -51,10 +51,18 @@ Backend는 `application.yml`에 로컬 기본값이 다 채워져 있어서, 별
 
 ### Backend
 
-로컬 개발은 기본값으로 동작하므로 별도 설정이 필요 없다. 운영 배포나 실제 나라장터 API 연동이 필요하면 루트 `.env.prod.example`을 참고해 `.env`를 만든다.
+로컬 개발은 기본값으로 동작하므로 별도 설정이 필요 없다.
 
 - `G2B_SERVICE_KEY`: 공공데이터포털(data.go.kr)에서 "나라장터 입찰공고정보서비스" 활용신청 후 발급되는 **encoding 키**를 사용한다. 비워두면 앱은 정상 기동하지만 나라장터 API 호출은 실패한다.
 - 나머지(`DB_*`, `JWT_SECRET`, `COOKIE_SECURE`)는 로컬 기본값으로 충분하다.
+
+**로컬에서 실제 G2B 연동을 테스트하려면**: `./gradlew bootRun`은 루트 `.env` 파일을 자동으로 읽지 않는다(별도 dotenv 플러그인 없음). 파일을 만들지 말고 셸 환경변수로 직접 넘긴다.
+
+```bash
+G2B_SERVICE_KEY=발급받은키 ./gradlew bootRun
+```
+
+**운영 배포용 `.env.prod`**는 이것과 별개다. `.github/workflows/deploy.yml`이 EC2 서버의 `/app/.env.prod` 파일을 `--env-file`로 참조하므로, 루트 `.env.prod.example`은 그 서버 파일을 만들 때 참고하는 템플릿일 뿐이며 이 저장소의 로컬 실행과는 무관하다.
 
 ### Frontend
 
