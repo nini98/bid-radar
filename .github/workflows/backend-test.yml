@@ -3,9 +3,6 @@ name: Backend Test
 on:
   pull_request:
     branches: [main]
-    paths:
-      - 'backend/**'
-      - '.github/workflows/backend-test.yml'
 
 jobs:
   test:
@@ -16,15 +13,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check for backend changes
+        id: changes
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - '.github/workflows/backend-test.yml'
+
       - name: Set up JDK 21
+        if: steps.changes.outputs.backend == 'true'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: '21'
 
       - name: Set up Gradle
+        if: steps.changes.outputs.backend == 'true'
         uses: gradle/actions/setup-gradle@v4
 
       - name: Run tests
+        if: steps.changes.outputs.backend == 'true'
         working-directory: backend
         run: ./gradlew test
