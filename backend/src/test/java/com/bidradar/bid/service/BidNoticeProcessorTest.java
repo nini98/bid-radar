@@ -13,19 +13,19 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 @Import({BidNoticeProcessor.class, G2bNoticeMapper.class, JpaConfig.class})
+@RecordApplicationEvents
 class BidNoticeProcessorTest extends IntegrationTestBase {
 
     @Autowired
@@ -37,11 +37,11 @@ class BidNoticeProcessorTest extends IntegrationTestBase {
     @Autowired
     BidAttachmentRepository bidAttachmentRepository;
 
-    @MockitoBean
-    ObjectMapper objectMapper;
+    @Autowired
+    ApplicationEvents events;
 
     @MockitoBean
-    ApplicationEventPublisher eventPublisher;
+    ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -71,7 +71,7 @@ class BidNoticeProcessorTest extends IntegrationTestBase {
         processor.process(item);
 
         // then
-        verify(eventPublisher).publishEvent(any(BidNoticeCollectedEvent.class));
+        assertThat(events.stream(BidNoticeCollectedEvent.class)).hasSize(1);
     }
 
     @Test
@@ -99,7 +99,7 @@ class BidNoticeProcessorTest extends IntegrationTestBase {
         processor.process(item);
 
         // then
-        verify(eventPublisher).publishEvent(any(BidNoticeCollectedEvent.class));
+        assertThat(events.stream(BidNoticeCollectedEvent.class)).hasSize(1);
     }
 
     @Test
