@@ -60,7 +60,7 @@
 
 ## 시나리오 6: 저장은 성공, 적합도 재계산 요청만 실패 (부분 실패)
 
-- 사전조건: 저장 자체는 성공하지만 재계산 요청만 실패하도록 백엔드/네트워크를 재현 (`recalculated: false` 응답)
+- 사전조건: `recalculated`는 백엔드 응답 필드가 아니라 `useSaveCompanyProfile`이 `POST /companies/me/recalculate` 호출의 성공 여부를 보고 프런트에서 만드는 값이다. 이 시나리오를 재현하려면 저장 `PUT /companies/me`는 정상 응답하도록 두고, 재계산 `POST /companies/me/recalculate`만 네트워크 오류 또는 5xx로 강제한다 (예: Playwright MCP로 해당 요청 경로만 골라 실패 응답을 반환하도록 가로채기).
 - 절차:
   1. 필수값을 채우고 "저장" 클릭
 - 기대 결과: "저장은 완료되었지만 재계산 요청에 실패했습니다." 토스트가 (성공이 아닌) 에러 스타일로 표시된다
