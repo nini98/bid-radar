@@ -34,14 +34,23 @@ Codex(공식 GitHub App, `chatgpt-codex-connector`)가 PR에 남기는 리뷰를
 
 ## 4. 로컬 환경변수 설정 (PC마다 반복)
 
-토큰 값은 Claude에게 붙여넣지 않고, 터미널에서 직접 설정한다.
+토큰 값은 Claude에게 붙여넣지 않고, 터미널에서 직접 설정한다. 셸 종류에 따라 등록 파일이 다르므로 `echo $SHELL`로 먼저 확인한다.
+
+**macOS (기본 셸이 zsh인 경우)**
 
 ```bash
 echo 'export BID_RADAR_GH_PR_READ_TOKEN="발급받은_토큰_값"' >> ~/.zshrc
 source ~/.zshrc
 ```
 
-환경변수 이름은 `BID_RADAR_GH_PR_READ_TOKEN`으로 고정한다 (다른 프로젝트 토큰과 혼동 방지).
+**WSL/Linux (기본 셸이 bash인 경우)**
+
+```bash
+echo 'export BID_RADAR_GH_PR_READ_TOKEN="발급받은_토큰_값"' >> ~/.bashrc
+source ~/.bashrc
+```
+
+환경변수 이름은 `BID_RADAR_GH_PR_READ_TOKEN`으로 고정한다 (다른 프로젝트 토큰과 혼동 방지). PC마다(맥/WSL 구분 없이) 반복해야 하는 설정이다.
 
 ---
 
