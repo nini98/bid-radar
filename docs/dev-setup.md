@@ -80,7 +80,16 @@ Epic-3 착수 전이라 아직 코드/의존성이 없다 (`ai-worker/`는 빈 �
 
 ## 4. MCP / Codex 리뷰 연동 (PC마다 반복해야 하는 것)
 
-- **Playwright MCP**: 저장소에 커밋된 `.mcp.json`이 `npx -y`로 자동 설치하므로 새 PC에서 별도 설정이 필요 없다.
+- **Playwright MCP**: 저장소에 커밋된 `.mcp.json`이 `npx -y`로 MCP 서버 프로세스 자체는 자동 실행하지만, 실제 브라우저 바이너리는 별도 설치해야 한다. `.mcp.json`이 `--browser chromium`로 고정돼 있어 시스템에 설치된 Chrome이 아니라 Playwright가 관리하는 Chromium을 사용하기 때문이다. 새 PC마다 최초 1회:
+  ```bash
+  npx playwright install chromium
+  ```
+  WSL(Linux)은 이것만으로 부족하고 시스템 라이브러리도 추가로 설치해야 한다 — 6절 참고. macOS는 아직 실측하지 않았다 — 7절 참고.
+- **Notion MCP**: `.mcp.json`에 커밋돼 있지 않다. 로컬 스코프(`-s local`, 이 PC + 이 사용자 계정 전용)로 등록돼 있어서 새 PC에서는 매번 다시 등록해야 한다.
+  ```bash
+  claude mcp add --transport http notion https://mcp.notion.com/mcp -s local
+  ```
+  등록 후 Claude Code 세션에서 Notion MCP 도구를 처음 호출하면 브라우저로 Notion 로그인(OAuth) 창이 뜬다. 로그인하면 그 PC에서는 이후 세션마다 다시 로그인할 필요 없다.
 - **Codex 리뷰 코멘트 확인용 read-only PAT**: Claude Code가 Codex 리뷰 결과를 읽으려면 PC마다 개인 토큰을 발급해 `BID_RADAR_GH_PR_READ_TOKEN` 환경변수로 등록해야 한다. 발급 절차와 권한 범위는 `docs/rules/codex-review-rule.md` 3~4절을 그대로 따른다. 토큰 값은 어떤 파일에도 기록하지 않는다.
 
 ---
@@ -99,3 +108,13 @@ Windows에서 WSL로 작업하는 경우 macOS/Linux와 명령어 자체는 동�
 
 - **Docker Desktop WSL2 통합**: Docker Desktop을 설치하는 것만으로는 WSL 안에서 `docker compose`가 데몬에 연결되지 않는다. Docker Desktop → Settings → Resources → WSL Integration에서 사용 중인 배포판(distro)에 통합을 켜야 한다.
 - **저장소는 WSL 파일시스템에 clone한다**: `/mnt/c/Users/...`(윈도우 드라이브)에 clone하면 파일 I/O가 크게 느려지고, `chmod +x ./gradlew`로 준 실행권한이 NTFS 쪽에서 제대로 유지되지 않는 경우가 있어 2절의 `Permission denied` 문제가 반복될 수 있다. `~/projects/bid-radar`처럼 WSL 안의 Linux 파일시스템에 clone할 것.
+- **Playwright MCP 브라우저 실행에 필요한 시스템 라이브러리**: WSL은 `libatk` 등 GUI 관련 라이브러리가 기본 설치돼 있지 않아, 4절의 `npx playwright install chromium`만으로는 브라우저가 뜨지 않는다(`Host system is missing dependencies` 류 에러). 아래를 추가로 실행한다.
+  ```bash
+  sudo npx playwright install-deps chromium
+  ```
+
+---
+
+## 7. macOS 참고
+
+**미검증.** `.mcp.json`의 Playwright MCP 설정 자체는 원래 macOS에서 먼저 작성되어 동작한 것이지만(Git 히스토리상 최초 커밋이 macOS 작업 중 추가됨), 그 때 브라우저 바이너리 설치나 시스템 의존성 설치 같은 별도 조치가 필요했는지는 기록이 남아있지 않아 확실치 않다. WSL 절(6절)처럼 macOS에만 해당하는 함정이 있는지, 4절의 `npx playwright install chromium`만으로 충분한지 등은 다음에 macOS에서 세팅할 때 실제로 확인하고 이 절을 채울 것.
