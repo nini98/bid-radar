@@ -5,6 +5,15 @@ function getCookie(name: string): string | null {
   return match ? decodeURIComponent(match[2]) : null;
 }
 
+export function resolveErrorMessage(error: {
+  response?: { data?: { data?: unknown; header?: { resultMessage?: string } } };
+  message?: string;
+}): string {
+  const body = error.response?.data;
+  const detail = typeof body?.data === 'string' && body.data.trim() ? body.data : null;
+  return detail ?? body?.header?.resultMessage ?? error.message ?? '오류가 발생했습니다.';
+}
+
 const instance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
@@ -24,12 +33,7 @@ instance.interceptors.response.use(
     }
     return body.data;
   },
-  (error) => {
-    const body = error.response?.data;
-    const detail = typeof body?.data === 'string' && body.data.trim() ? body.data : null;
-    const message = detail ?? body?.header?.resultMessage ?? error.message ?? '오류가 발생했습니다.';
-    return Promise.reject(new Error(message));
-  }
+  (error) => Promise.reject(new Error(resolveErrorMessage(error)))
 );
 
 export default instance;

@@ -4,6 +4,7 @@
 
 이 문서는 React 프론트엔드 개발 기준을 정의한다.
 컴포넌트 구조, API 연동, 상태 관리, 스타일 방침을 다룬다.
+테스트 코드 작성 범위와 도구는 `docs/rules/frontend/testing-rule.md`를 따른다.
 
 ---
 
@@ -216,3 +217,4 @@ export interface BidNoticeSummary {
 - HTTP는 반드시 axios 인스턴스를 통한다. CSRF 헤더와 credentials는 자동으로 처리한다
 - 서버 상태는 React Query로, UI 상태는 useState로 관리한다
 - "내 정보" 쿼리는 queryKey에 사용자 id를 포함한다. 여러 쿼리를 조합해 쓸 때는 모든 isError를 반영한다
+- 테스트는 전체 커버리지가 아니라 핵심 로직만 선별 작성한다. 나머지 화면 흐름은 `docs/qa/` 시나리오 문서로 남긴다 (`testing-rule.md` 참고)

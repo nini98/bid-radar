@@ -71,7 +71,7 @@ Task 파일 작성 시 작업 내용에 맞는 Rule만 선택한다.
   1. 변경/생성할 파일 목록
   2. 접근 방식 요약 (어떤 구조로 구현할지 3~5줄)
   3. 불확실한 지점: Task 문서에 명시되지 않아서 가정이 필요한 부분. 가정하지 말고 질문으로 남길 것
-  4. 작성할 테스트 목록: 이 태스크의 핵심 동작을 검증하는 테스트를 요구사항 단위로 나열 (예: "중복 공고는 저장되지 않는다"). `docs/rules/springboot/testing-rule.md`의 테스트 종류 기준에 따라 단위/통합 구분도 표시. `self-review-rule.md`의 테스트 생략 허용 기준(단순 CRUD/설정/Mapper)에 해당하면 "테스트 생략: {사유}"로 명시.
+  4. 작성할 테스트 목록: 이 태스크의 핵심 동작을 검증하는 테스트를 요구사항 단위로 나열 (예: "중복 공고는 저장되지 않는다"). Spring Boot는 `docs/rules/springboot/testing-rule.md`, Frontend는 `docs/rules/frontend/testing-rule.md`의 기준에 따라 대상 여부와 (Spring Boot의 경우) 단위/통합 구분을 표시. 테스트 생략 허용 기준(Spring Boot는 `self-review-rule.md`의 단순 CRUD/설정/Mapper, Frontend는 `frontend/testing-rule.md` §4-2)에 해당하면 "테스트 생략: {사유}"로 명시하고, 생략한 화면 흐름은 Frontend Task에 한해 `docs/qa/` 시나리오 문서 작성 여부도 함께 표시.
 - 개발 도중 계획에 없던 파일을 수정해야 하거나 접근 방식을 바꿔야 하는 상황이 생기면, 진행을 멈추고 사용자에게 보고 후 승인을 받는다.
 - 예외 (계획 생략 가능): 오타 수정, 문서 수정, 사용자가 "계획 생략"이라고 명시한 경우.
 
