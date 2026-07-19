@@ -181,6 +181,6 @@ EC2의 일반 인터넷 아웃바운드(apt, GitHub 등)는 NAT Gateway(public-2
 - EC2 t3.small: 시간당 과금 — **2026-07-19 중지(stopped)**, EBS 스토리지 비용만 남음
 - ALB: 애초에 미생성 상태로 비용 발생한 적 없음
 - 위 정리로 월 추정 비용이 ~$135 → ~$2(EBS만) 수준으로 감소
-- **재생성 방법**: NAT Gateway / EIP / Interface Endpoint 7개는 `infra/terraform/generated.tf`에서 리소스 블록 자체를 삭제한 상태라 `terraform apply`만으로는 복원되지 않는다. 이 리소스들을 지우기 직전 커밋(`git log -- infra/terraform/generated.tf`로 확인)에서 해당 블록을 다시 가져오거나 `git show <커밋>:infra/terraform/generated.tf`로 내용을 확인해 코드에 복원한 뒤 `terraform apply`를 실행해야 한다.
+- **재생성 방법**: NAT Gateway / EIP / Interface Endpoint 7개는 `infra/terraform/network-egress.tf`에 `var.enable_network_egress`로 켜고 끄는 형태로 코드가 남아있다 (기본값 `false`). `terraform apply -var="enable_network_egress=true"`(또는 `variables.tf`의 기본값을 `true`로 변경 후 apply)로 복원한다. 새 리소스로 생성되므로 ID는 예전과 달라지지만 기능은 동일하다. (참고: 이 값들이 삭제되기 전 상태는 git 히스토리에 존재하지 않는다 — `infra/terraform/`을 처음 커밋한 시점에 이미 삭제된 상태였다.)
 - **EC2 전원 상태는 Terraform이 관리하지 않는다.** `aws_instance`의 `instance_state`는 이 프로바이더 버전에서 계산 전용(읽기 전용) 값이라 코드로 설정할 수 없다(직접 검증: `terraform apply` 시도 시 "Can't configure a value for instance_state" 오류). 즉 `terraform plan/apply`는 인스턴스가 켜져있든 꺼져있든 신경 쓰지 않으며, EC2를 다시 시작할 때는 `aws ec2 start-instances --instance-ids i-0c4cb277e65bbf075`로 별도 실행해야 한다.
 - **`.github/workflows/deploy.yml`의 자동 트리거를 잠시 멈춰뒀다(`workflow_dispatch`로 전환).** SSM 접속 경로가 사라진 상태에서 main push마다 자동 실행되면 배포 job이 매번 실패하기 때문이다. 인프라 복원 후 해당 파일의 `on` 블록을 `push` 트리거로 되돌려야 한다.

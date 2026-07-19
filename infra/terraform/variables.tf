@@ -11,3 +11,13 @@ variable "ec2_key_name" {
   type        = string
   default     = "jay-ubuntu-1"
 }
+
+# NAT Gateway / EIP / Interface VPC Endpoint 7개 생성 여부 (network-egress.tf 참고).
+# 비용 절감을 위해 기본값은 false. 배포 검증 등으로 다시 필요해지면 true로 바꿔
+# terraform apply. 자세한 내용은 network-egress.tf 상단 주석과
+# docs/bid-radar-aws-infra-summary.md 참고.
+variable "enable_network_egress" {
+  description = "NAT Gateway/EIP/Interface VPC Endpoint 7개를 생성할지 여부"
+  type        = bool
+  default     = false
+}
