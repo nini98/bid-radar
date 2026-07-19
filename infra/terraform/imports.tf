@@ -95,6 +95,26 @@ import {
 }
 
 import {
+  to = aws_route_table_association.public_2a
+  id = "subnet-03d76dfbfc4293b2f/rtb-03116ed6b32b67a02"
+}
+
+import {
+  to = aws_route_table_association.public_2c
+  id = "subnet-084682701469e1edf/rtb-03116ed6b32b67a02"
+}
+
+import {
+  to = aws_route_table_association.private_2a
+  id = "subnet-00b4479f4820b60fd/rtb-07656b03152081aa7"
+}
+
+import {
+  to = aws_route_table_association.private_2c
+  id = "subnet-0f5f1fa8ad0cc2412/rtb-07656b03152081aa7"
+}
+
+import {
   to = aws_instance.main
   id = "i-0c4cb277e65bbf075"
 }

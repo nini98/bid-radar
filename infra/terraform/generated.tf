@@ -9,7 +9,7 @@ resource "aws_internet_gateway" "main" {
   tags_all = {
     Name = "bid-radar-igw"
   }
-  vpc_id = "vpc-0e974aca7cbb733c4"
+  vpc_id = aws_vpc.main.id
 }
 
 # __generated__ by Terraform
@@ -21,7 +21,7 @@ resource "aws_route_table" "public" {
     core_network_arn           = ""
     destination_prefix_list_id = ""
     egress_only_gateway_id     = ""
-    gateway_id                 = "igw-0c506d60ad2677995"
+    gateway_id                 = aws_internet_gateway.main.id
     ipv6_cidr_block            = null
     local_gateway_id           = ""
     nat_gateway_id             = ""
@@ -36,7 +36,7 @@ resource "aws_route_table" "public" {
   tags_all = {
     Name = "bid-radar-rt-public"
   }
-  vpc_id = "vpc-0e974aca7cbb733c4"
+  vpc_id = aws_vpc.main.id
 }
 
 # __generated__ by Terraform
@@ -49,7 +49,7 @@ resource "aws_route_table" "private" {
   tags_all = {
     Name = "bid-radar-rt-private"
   }
-  vpc_id = "vpc-0e974aca7cbb733c4"
+  vpc_id = aws_vpc.main.id
 }
 
 # __generated__ by Terraform
@@ -70,7 +70,7 @@ resource "aws_subnet" "public_2a" {
   tags_all = {
     Name = "bid-radar-public-2a"
   }
-  vpc_id = "vpc-0e974aca7cbb733c4"
+  vpc_id = aws_vpc.main.id
 }
 
 # __generated__ by Terraform from "sg-00ff836a761760f14"
@@ -94,7 +94,7 @@ resource "aws_security_group" "ec2" {
     ipv6_cidr_blocks = []
     prefix_list_ids  = []
     protocol         = "tcp"
-    security_groups  = ["sg-087ea442fcc4180a6"]
+    security_groups  = [aws_security_group.alb.id]
     self             = false
     to_port          = 8080
     }, {
@@ -104,7 +104,7 @@ resource "aws_security_group" "ec2" {
     ipv6_cidr_blocks = []
     prefix_list_ids  = []
     protocol         = "tcp"
-    security_groups  = ["sg-087ea442fcc4180a6"]
+    security_groups  = [aws_security_group.alb.id]
     self             = false
     to_port          = 80
   }]
@@ -113,7 +113,7 @@ resource "aws_security_group" "ec2" {
   revoke_rules_on_delete = null
   tags                   = {}
   tags_all               = {}
-  vpc_id                 = "vpc-0e974aca7cbb733c4"
+  vpc_id                 = aws_vpc.main.id
 }
 
 # __generated__ by Terraform
@@ -134,7 +134,7 @@ resource "aws_subnet" "private_2a" {
   tags_all = {
     Name = "bid-radar-private-2a"
   }
-  vpc_id = "vpc-0e974aca7cbb733c4"
+  vpc_id = aws_vpc.main.id
 }
 
 # __generated__ by Terraform from "sg-087ea442fcc4180a6"
@@ -167,7 +167,7 @@ resource "aws_security_group" "alb" {
   revoke_rules_on_delete = null
   tags                   = {}
   tags_all               = {}
-  vpc_id                 = "vpc-0e974aca7cbb733c4"
+  vpc_id                 = aws_vpc.main.id
 }
 
 # __generated__ by Terraform from "vpce-075b96c8801787d9e"
@@ -185,7 +185,7 @@ resource "aws_vpc_endpoint" "s3" {
   })
   private_dns_enabled        = false
   resource_configuration_arn = null
-  route_table_ids            = ["rtb-07656b03152081aa7"]
+  route_table_ids            = [aws_route_table.private.id]
   security_group_ids         = []
   service_name               = "com.amazonaws.ap-northeast-2.s3"
   service_network_arn        = null
@@ -198,7 +198,7 @@ resource "aws_vpc_endpoint" "s3" {
     Name = "bid-radar-vpce-s3"
   }
   vpc_endpoint_type = "Gateway"
-  vpc_id            = "vpc-0e974aca7cbb733c4"
+  vpc_id            = aws_vpc.main.id
   dns_options {
     dns_record_ip_type                             = "service-defined"
     private_dns_only_for_inbound_resolver_endpoint = false
@@ -223,7 +223,7 @@ resource "aws_subnet" "private_2c" {
   tags_all = {
     Name = "bid-radar-private-2c"
   }
-  vpc_id = "vpc-0e974aca7cbb733c4"
+  vpc_id = aws_vpc.main.id
 }
 
 # __generated__ by Terraform
@@ -244,7 +244,7 @@ resource "aws_subnet" "public_2c" {
   tags_all = {
     Name = "bid-radar-public-2c"
   }
-  vpc_id = "vpc-0e974aca7cbb733c4"
+  vpc_id = aws_vpc.main.id
 }
 
 # __generated__ by Terraform from "sg-03d97bdadd6039fc3"
@@ -268,7 +268,7 @@ resource "aws_security_group" "endpoint" {
     ipv6_cidr_blocks = []
     prefix_list_ids  = []
     protocol         = "tcp"
-    security_groups  = ["sg-00ff836a761760f14"]
+    security_groups  = [aws_security_group.ec2.id]
     self             = false
     to_port          = 443
   }]
@@ -277,7 +277,7 @@ resource "aws_security_group" "endpoint" {
   revoke_rules_on_delete = null
   tags                   = {}
   tags_all               = {}
-  vpc_id                 = "vpc-0e974aca7cbb733c4"
+  vpc_id                 = aws_vpc.main.id
 }
 
 # __generated__ by Terraform
@@ -326,7 +326,7 @@ resource "aws_instance" "main" {
   secondary_private_ips                = []
   security_groups                      = []
   source_dest_check                    = true
-  subnet_id                            = "subnet-00b4479f4820b60fd"
+  subnet_id                            = aws_subnet.private_2a.id
   tags = {
     Name = "bid-radar-ec2"
   }
@@ -338,7 +338,7 @@ resource "aws_instance" "main" {
   user_data_base64            = null
   user_data_replace_on_change = null
   volume_tags                 = null
-  vpc_security_group_ids      = ["sg-00ff836a761760f14"]
+  vpc_security_group_ids      = [aws_security_group.ec2.id]
   capacity_reservation_specification {
     capacity_reservation_preference = "open"
   }
@@ -478,4 +478,24 @@ resource "aws_iam_role_policy_attachment" "ec2_cloudwatch" {
 resource "aws_iam_role_policy_attachment" "ec2_secrets" {
   role       = aws_iam_role.ec2.name
   policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+}
+
+resource "aws_route_table_association" "public_2a" {
+  subnet_id      = aws_subnet.public_2a.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "public_2c" {
+  subnet_id      = aws_subnet.public_2c.id
+  route_table_id = aws_route_table.public.id
+}
+
+resource "aws_route_table_association" "private_2a" {
+  subnet_id      = aws_subnet.private_2a.id
+  route_table_id = aws_route_table.private.id
+}
+
+resource "aws_route_table_association" "private_2c" {
+  subnet_id      = aws_subnet.private_2c.id
+  route_table_id = aws_route_table.private.id
 }
