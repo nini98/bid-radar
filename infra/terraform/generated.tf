@@ -318,7 +318,7 @@ resource "aws_instance" "main" {
   iam_instance_profile                 = aws_iam_instance_profile.ec2.name
   instance_initiated_shutdown_behavior = "stop"
   instance_type                        = "t3.small"
-  key_name                             = "jay-ubuntu-1"
+  key_name                             = var.ec2_key_name
   monitoring                           = false
   placement_group                      = null
   placement_partition_number           = 0
