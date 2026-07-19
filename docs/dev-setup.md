@@ -120,3 +120,44 @@ Windows에서 WSL로 작업하는 경우 macOS/Linux와 명령어 자체는 동�
 ## 7. macOS 참고
 
 **미검증.** `.mcp.json`의 Playwright MCP 설정 자체는 원래 macOS에서 먼저 작성되어 동작한 것이지만(Git 히스토리상 최초 커밋이 macOS 작업 중 추가됨), 그 때 브라우저 바이너리 설치나 시스템 의존성 설치 같은 별도 조치가 필요했는지는 기록이 남아있지 않아 확실치 않다. WSL 절(6절)처럼 macOS에만 해당하는 함정이 있는지, 4절의 버전 고정 설치 명령만으로 충분한지 등은 다음에 macOS에서 세팅할 때 실제로 확인하고 이 절을 채울 것.
+
+---
+
+## 8. AWS / Terraform 셋업 (PC마다 반복해야 하는 것)
+
+`infra/terraform/`의 코드와 AWS에 떠 있는 실제 리소스는 clone/로그인과 무관하게 그대로 유지된다. 하지만 그걸 다루는 **로컬 도구(CLI)와 자격증명은 PC마다 새로 설정**해야 한다 (2026-07-19, PR #31 작업 중 실측).
+
+### 8-1. 필요한 CLI 설치
+
+| 도구 | macOS | WSL/Linux |
+|---|---|---|
+| AWS CLI v2 | `brew install awscli` | 공식 설치 스크립트 (`https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip`) 또는 `sudo apt install awscli` |
+| Terraform | `brew install terraform` | [HashiCorp 공식 apt 저장소](https://developer.hashicorp.com/terraform/install) 또는 `releases.hashicorp.com`에서 바이너리 직접 다운로드 |
+
+### 8-2. AWS 자격증명 프로파일 2개 등록
+
+IAM 사용자 자체는 AWS 계정에 이미 있으므로(어느 PC에서든 접근 가능), **각 PC에서는 그 사용자의 Access Key만 새로 발급받아 로컬에 등록**하면 된다. 기존 PC에서 쓰던 키 값을 그대로 옮겨써도 되지만, 분실 시 개별 무효화가 쉽도록 PC(기기)별로 새 키를 발급하는 걸 권장한다.
+
+1. **`bid-radar-viewonly`** — ViewOnlyAccess 권한. Claude Code 세션이 AWS 상태를 조회할 때 이 프로파일만 사용한다 (생성/삭제 불가).
+2. **관리자 권한 프로파일** (로컬에서는 `jay-admin`으로 명명) — 실제로 `terraform apply`, `aws ec2 stop-instances` 등 변경/삭제를 실행할 때 사용자가 직접 쓰는 프로파일. AdministratorAccess 권한.
+
+두 프로파일 다 IAM 콘솔에서 Access Key 발급 후:
+
+```bash
+aws configure --profile bid-radar-viewonly
+aws configure --profile jay-admin   # 프로파일 이름은 자유, 관리자 계정임을 알 수 있게 명명
+```
+
+Region은 `ap-northeast-2`, Output format은 `json`으로 설정한다. 자격증명은 절대 커밋하지 않는다 (`~/.aws/credentials`는 저장소 밖에 위치).
+
+**권한 분리 원칙**(자세한 배경은 `docs/bid-radar-aws-infra-summary.md`와 PR #31 참고): 조회는 항상 ViewOnly로, 실제 리소스 변경은 항상 관리자 프로파일로 **사용자가 직접** 실행한다. Claude Code 세션에는 관리자 자격증명을 연결하지 않는다.
+
+### 8-3. `infra/terraform/` 최초 실행
+
+```bash
+cd infra/terraform
+AWS_PROFILE=bid-radar-viewonly terraform init
+AWS_PROFILE=bid-radar-viewonly terraform plan   # 실제 상태와 코드가 일치하는지 확인용 (읽기 전용)
+```
+
+리소스를 실제로 만들거나 지우는 `terraform apply`는 `AWS_PROFILE=jay-admin`(또는 새로 등록한 관리자 프로파일명)으로 실행한다.
