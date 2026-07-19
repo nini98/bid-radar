@@ -315,7 +315,7 @@ resource "aws_instance" "main" {
   hibernation                          = false
   host_id                              = null
   host_resource_group_arn              = null
-  iam_instance_profile                 = "bid-radar-ec2-role"
+  iam_instance_profile                 = aws_iam_instance_profile.ec2.name
   instance_initiated_shutdown_behavior = "stop"
   instance_type                        = "t3.small"
   key_name                             = "jay-ubuntu-1"
@@ -452,4 +452,30 @@ resource "aws_iam_role" "ec2" {
   permissions_boundary  = null
   tags                  = {}
   tags_all              = {}
+}
+
+resource "aws_iam_instance_profile" "ec2" {
+  name = "bid-radar-ec2-role"
+  path = "/"
+  role = aws_iam_role.ec2.name
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_ecr_readonly" {
+  role       = aws_iam_role.ec2.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_ssm" {
+  role       = aws_iam_role.ec2.name
+  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_cloudwatch" {
+  role       = aws_iam_role.ec2.name
+  policy_arn = "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+resource "aws_iam_role_policy_attachment" "ec2_secrets" {
+  role       = aws_iam_role.ec2.name
+  policy_arn = "arn:aws:iam::aws:policy/SecretsManagerReadWrite"
 }

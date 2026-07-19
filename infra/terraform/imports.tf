@@ -70,6 +70,31 @@ import {
 }
 
 import {
+  to = aws_iam_instance_profile.ec2
+  id = "bid-radar-ec2-role"
+}
+
+import {
+  to = aws_iam_role_policy_attachment.ec2_ecr_readonly
+  id = "bid-radar-ec2-role/arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryReadOnly"
+}
+
+import {
+  to = aws_iam_role_policy_attachment.ec2_ssm
+  id = "bid-radar-ec2-role/arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
+}
+
+import {
+  to = aws_iam_role_policy_attachment.ec2_cloudwatch
+  id = "bid-radar-ec2-role/arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy"
+}
+
+import {
+  to = aws_iam_role_policy_attachment.ec2_secrets
+  id = "bid-radar-ec2-role/arn:aws:iam::aws:policy/SecretsManagerReadWrite"
+}
+
+import {
   to = aws_instance.main
   id = "i-0c4cb277e65bbf075"
 }

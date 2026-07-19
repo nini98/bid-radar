@@ -45,7 +45,7 @@
 | NAT 프라이빗 IP | 10.0.1.58 |
 | NAT 가용성 모드 | 영역별 (Zonal, AZ 단일) |
 
-> **2026-07-19 갱신: NAT Gateway와 EIP는 삭제됨.** 학습/검증 끝난 뒤 비용(월 ~$47) 절감을 위해 Terraform으로 제거. IGW는 유지(무료). 재생성 필요 시 `infra/terraform/` 참고.
+> **2026-07-19 갱신: NAT Gateway와 EIP는 삭제됨.** 학습/검증 끝난 뒤 비용(월 ~$47) 절감을 위해 Terraform으로 제거. IGW는 유지(무료). 재생성 방법은 11장 하단 참고 (단순 `terraform apply`가 아니라 리소스 블록 복원이 먼저 필요).
 
 ---
 
@@ -85,7 +85,7 @@
 
 모든 Interface Endpoint: 프라이빗 DNS 이름 활성화 ✅
 
-> **2026-07-19 갱신: Interface Endpoint 7개(secretsmanager/ssm/logs/ecr-api/ecr-dkr/ssmmessages/ec2messages) 전부 삭제됨.** S3 Gateway Endpoint(무료)만 유지. 이 삭제로 EC2의 SSM Session Manager 접속 경로가 사라짐(Bastion도 없어서 현재 EC2에 접속할 방법이 없음) — 재사용 시 `infra/terraform/`으로 재생성 필요.
+> **2026-07-19 갱신: Interface Endpoint 7개(secretsmanager/ssm/logs/ecr-api/ecr-dkr/ssmmessages/ec2messages) 전부 삭제됨.** S3 Gateway Endpoint(무료)만 유지. 이 삭제로 EC2의 SSM Session Manager 접속 경로가 사라짐(Bastion도 없어서 현재 EC2에 접속할 방법이 없음) — 재생성 방법은 11장 하단 참고.
 
 ---
 
@@ -156,7 +156,7 @@ AWS 서비스 (Secrets Manager / SSM / ECR / CloudWatch Logs / S3)
 EC2의 일반 인터넷 아웃바운드(apt, GitHub 등)는 NAT Gateway(public-2a)를 거침
 ```
 
-> **2026-07-19 갱신: 위 흐름 중 NAT Gateway와 VPC Endpoint(S3 제외) 구간은 현재 존재하지 않음.** EC2도 중지 상태라 이 트래픽 흐름 자체가 지금은 작동하지 않는다. 재배포 검증 시 `infra/terraform/`으로 재생성 후 이 흐름이 복원된다.
+> **2026-07-19 갱신: 위 흐름 중 NAT Gateway와 VPC Endpoint(S3 제외) 구간은 현재 존재하지 않음.** EC2도 중지 상태라 이 트래픽 흐름 자체가 지금은 작동하지 않는다. 재배포 검증 시 11장 하단의 재생성 방법을 따라 복원한다.
 
 ---
 
@@ -181,4 +181,5 @@ EC2의 일반 인터넷 아웃바운드(apt, GitHub 등)는 NAT Gateway(public-2
 - EC2 t3.small: 시간당 과금 — **2026-07-19 중지(stopped)**, EBS 스토리지 비용만 남음
 - ALB: 애초에 미생성 상태로 비용 발생한 적 없음
 - 위 정리로 월 추정 비용이 ~$135 → ~$2(EBS만) 수준으로 감소
-- 다시 배포 검증이 필요해지면 `infra/terraform/`에서 NAT/Endpoint 리소스를 되살리고(`terraform apply`) EC2를 시작하면 됨
+- **재생성 방법**: NAT Gateway / EIP / Interface Endpoint 7개는 `infra/terraform/generated.tf`에서 리소스 블록 자체를 삭제한 상태라 `terraform apply`만으로는 복원되지 않는다. 이 리소스들을 지우기 직전 커밋(`git log -- infra/terraform/generated.tf`로 확인)에서 해당 블록을 다시 가져오거나 `git show <커밋>:infra/terraform/generated.tf`로 내용을 확인해 코드에 복원한 뒤 `terraform apply`를 실행해야 한다.
+- **EC2 전원 상태는 Terraform이 관리하지 않는다.** `aws_instance`의 `instance_state`는 이 프로바이더 버전에서 계산 전용(읽기 전용) 값이라 코드로 설정할 수 없다(직접 검증: `terraform apply` 시도 시 "Can't configure a value for instance_state" 오류). 즉 `terraform plan/apply`는 인스턴스가 켜져있든 꺼져있든 신경 쓰지 않으며, EC2를 다시 시작할 때는 `aws ec2 start-instances --instance-ids i-0c4cb277e65bbf075`로 별도 실행해야 한다.
