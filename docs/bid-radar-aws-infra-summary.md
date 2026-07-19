@@ -1,8 +1,11 @@
 # bid-radar AWS 인프라 요약
 
 > 작성일: 2026-06-29 (콘솔에서 직접 구축한 내용 정리)
+> 갱신: 2026-07-19 — 비용 절감을 위해 NAT Gateway / EIP / Interface VPC Endpoint 7개 삭제, EC2 중지. 인프라는 `infra/terraform/`으로 코드화 완료.
 > 리전: ap-northeast-2 (서울)
 > 계정 ID: 200596937528
+
+> **참고**: 이 문서는 최초 구축 시점(6/29)의 스냅샷 기록이다. 실제 현재 상태와 리소스 정의의 source of truth는 `infra/terraform/`이다. 아래 내용 중 3장(NAT), 6장(Interface Endpoint), 8장(EC2 상태)은 갱신 이후 변경됨 — 각 섹션 하단의 갱신 노트 참고.
 
 ---
 
@@ -42,6 +45,8 @@
 | NAT 프라이빗 IP | 10.0.1.58 |
 | NAT 가용성 모드 | 영역별 (Zonal, AZ 단일) |
 
+> **2026-07-19 갱신: NAT Gateway와 EIP는 삭제됨.** 학습/검증 끝난 뒤 비용(월 ~$47) 절감을 위해 Terraform으로 제거. IGW는 유지(무료). 재생성 필요 시 `infra/terraform/` 참고.
+
 ---
 
 ## 4. 라우팅 테이블
@@ -80,6 +85,8 @@
 
 모든 Interface Endpoint: 프라이빗 DNS 이름 활성화 ✅
 
+> **2026-07-19 갱신: Interface Endpoint 7개(secretsmanager/ssm/logs/ecr-api/ecr-dkr/ssmmessages/ec2messages) 전부 삭제됨.** S3 Gateway Endpoint(무료)만 유지. 이 삭제로 EC2의 SSM Session Manager 접속 경로가 사라짐(Bastion도 없어서 현재 EC2에 접속할 방법이 없음) — 재사용 시 `infra/terraform/`으로 재생성 필요.
+
 ---
 
 ## 7. IAM Role
@@ -107,11 +114,13 @@
 | 보안 그룹 | bid-radar-sg-ec2 |
 | IAM 인스턴스 프로파일 | bid-radar-ec2-role |
 | 스토리지 | 20GiB gp3 |
-| 접속 방식 | SSM Session Manager (Bastion 없음) |
+| 접속 방식 | ~~SSM Session Manager (Bastion 없음)~~ → 2026-07-19부로 접속 불가 (아래 참고) |
 
 ### EC2 내부 소프트웨어 설치 현황
 - Docker 25.0.14 (설치 완료)
 - Docker Compose v5.2.0 (CLI 플러그인, 설치 완료)
+
+> **2026-07-19 갱신: 인스턴스 중지(stopped) 상태.** NAT/SSM 관련 Endpoint 삭제로 어차피 접속 경로가 없어져서 컴퓨팅 비용(월 ~$19)까지 절감 목적으로 중지. 인스턴스 자체(디스크 포함)는 살아있어 필요 시 콘솔/CLI로 재시작 가능하나, 재시작해도 NAT/Endpoint를 다시 만들기 전까진 SSM 접속은 여전히 안 됨.
 
 ---
 
@@ -127,7 +136,7 @@
 
 ---
 
-## 10. 트래픽 흐름 요약
+## 10. 트래픽 흐름 요약 (2026-06-29 최초 설계 기준, 아래 갱신 노트 참고)
 
 ```
 인터넷
@@ -147,6 +156,8 @@ AWS 서비스 (Secrets Manager / SSM / ECR / CloudWatch Logs / S3)
 EC2의 일반 인터넷 아웃바운드(apt, GitHub 등)는 NAT Gateway(public-2a)를 거침
 ```
 
+> **2026-07-19 갱신: 위 흐름 중 NAT Gateway와 VPC Endpoint(S3 제외) 구간은 현재 존재하지 않음.** EC2도 중지 상태라 이 트래픽 흐름 자체가 지금은 작동하지 않는다. 재배포 검증 시 `infra/terraform/`으로 재생성 후 이 흐름이 복원된다.
+
 ---
 
 ## 11. 아직 안 한 작업 (TODO)
@@ -156,15 +167,18 @@ EC2의 일반 인터넷 아웃바운드(apt, GitHub 등)는 NAT Gateway(public-2
 - [ ] ALB + Target Group 생성 (도메인/ACM 인증서 필요)
 - [ ] GitHub Actions CI/CD 파이프라인 (build → ECR push → EC2 pull/배포)
 - [ ] 전체 배포 동작 확인
-- [ ] 학습/검증 끝나면 NAT, ALB, Interface Endpoint 등 비용 리소스 정리
-- [ ] Terraform 또는 CloudFormation IaC Generator로 코드화 (포트폴리오 증빙)
+- [x] 학습/검증 끝나면 NAT, Interface Endpoint 등 비용 리소스 정리 (2026-07-19 완료, ALB는 애초에 미생성이라 해당 없음)
+- [x] Terraform으로 코드화 (2026-07-19 완료, `infra/terraform/`)
 
 ---
 
 ## 비용 관련 참고
 
-- NAT Gateway: 시간당 + 데이터 처리량 과금 (약 $42/월 고정 + 트래픽)
-- Interface Endpoint 5개(secretsmanager/ssm/logs/ecr-api/ecr-dkr/ssmmessages/ec2messages, 총 7개): 각각 시간당 과금
-- S3 Endpoint(Gateway): 무료
-- ALB 생성 시 추가 비용 발생 예정
-- 학습 목적 검증 후 비싼 리소스(NAT, Interface Endpoint, ALB) 삭제 권장, IaC로 재현 가능하게 보존
+- NAT Gateway: 시간당 + 데이터 처리량 과금 (약 $42/월 고정 + 트래픽) — **2026-07-19 삭제됨**
+- Interface Endpoint 7개(secretsmanager/ssm/logs/ecr-api/ecr-dkr/ssmmessages/ec2messages): 각각 시간당 과금 — **2026-07-19 전부 삭제됨**
+- Elastic IP(NAT용): 연결 여부 무관하게 시간당 과금(2024.2~ AWS 정책) — **2026-07-19 삭제됨**
+- S3 Endpoint(Gateway): 무료 — 유지 중
+- EC2 t3.small: 시간당 과금 — **2026-07-19 중지(stopped)**, EBS 스토리지 비용만 남음
+- ALB: 애초에 미생성 상태로 비용 발생한 적 없음
+- 위 정리로 월 추정 비용이 ~$135 → ~$2(EBS만) 수준으로 감소
+- 다시 배포 검증이 필요해지면 `infra/terraform/`에서 NAT/Endpoint 리소스를 되살리고(`terraform apply`) EC2를 시작하면 됨
