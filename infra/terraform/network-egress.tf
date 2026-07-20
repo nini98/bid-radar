@@ -23,6 +23,12 @@ resource "aws_nat_gateway" "main" {
   connectivity_type = "public"
   subnet_id         = aws_subnet.public_2a.id
 
+  # subnet만 참조해서는 IGW와 생성 순서 의존성이 안 생긴다. 새 VPC를 처음부터
+  # 만드는 환경에서 IGW가 VPC에 붙기 전에 NAT Gateway 생성이 시도되면 실패할
+  # 수 있어 명시적으로 순서를 강제한다 (기존 계정에서 egress만 복원하는
+  # 현재 시나리오에는 영향 없음).
+  depends_on = [aws_internet_gateway.main]
+
   tags = {
     Name = "bid-radar-nat"
   }
