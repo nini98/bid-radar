@@ -19,7 +19,12 @@ export default function BidListPage() {
 
   const { data: user } = useMe();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
-  const { data: companyProfile, isLoading: isCompanyProfileLoading, isError: isCompanyProfileError } = useCompanyProfile();
+  const {
+    data: companyProfile,
+    isLoading: isCompanyProfileLoading,
+    isError: isCompanyProfileError,
+    refetch: refetchCompanyProfile,
+  } = useCompanyProfile();
 
   const { data, isLoading, isError, error, refetch } = useBidList({
     keyword: keyword || undefined,
@@ -76,6 +81,18 @@ export default function BidListPage() {
             <Link to="/company/profile" className="font-medium underline shrink-0 ml-3">
               프로필 설정하기
             </Link>
+          </div>
+        )}
+
+        {isCompanyProfileError && (
+          <div className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+            <span>회사 프로필 정보를 불러오지 못해 적합도를 확인할 수 없습니다.</span>
+            <button
+              onClick={() => refetchCompanyProfile()}
+              className="font-medium underline shrink-0 ml-3"
+            >
+              다시 시도
+            </button>
           </div>
         )}
 
