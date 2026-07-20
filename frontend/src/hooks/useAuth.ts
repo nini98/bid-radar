@@ -44,6 +44,7 @@ export function useLogout() {
     mutationFn: logout,
     onSettled: () => {
       queryClient.removeQueries({ queryKey: ['auth'] });
+      queryClient.removeQueries({ queryKey: ['bids'] });
       navigate('/login', { replace: true });
     },
   });

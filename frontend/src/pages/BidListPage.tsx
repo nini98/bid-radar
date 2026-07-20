@@ -2,25 +2,34 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useBidList } from '../hooks/useBidList';
 import { useMe, useLogout } from '../hooks/useAuth';
+import { useCompanyProfile } from '../hooks/useCompanyProfile';
 import BidCard from '../components/bid/BidCard';
 import BidSearchBar from '../components/bid/BidSearchBar';
 import BidSummaryBar from '../components/bid/BidSummaryBar';
 import Pagination from '../components/common/Pagination';
 import SkeletonCard from '../components/common/SkeletonCard';
-import type { BidSortType } from '../types/bid';
+import type { BidSortType, MatchGrade } from '../types/bid';
 
 export default function BidListPage() {
   const [keyword, setKeyword] = useState('');
   const [region, setRegion] = useState('');
+  const [grade, setGrade] = useState<MatchGrade | ''>('');
   const [sort, setSort] = useState<BidSortType>('LATEST');
   const [page, setPage] = useState(0);
 
   const { data: user } = useMe();
   const { mutate: logout, isPending: isLoggingOut } = useLogout();
+  const {
+    data: companyProfile,
+    isLoading: isCompanyProfileLoading,
+    isError: isCompanyProfileError,
+    refetch: refetchCompanyProfile,
+  } = useCompanyProfile();
 
   const { data, isLoading, isError, error, refetch } = useBidList({
     keyword: keyword || undefined,
     region: region || undefined,
+    grade: grade || undefined,
     sort,
     page,
     size: 20,
@@ -58,11 +67,34 @@ export default function BidListPage() {
           keyword={keyword}
           sort={sort}
           region={region}
+          grade={grade}
           onKeywordChange={setKeyword}
           onSortChange={(v) => { setSort(v); setPage(0); }}
           onRegionChange={(v) => { setRegion(v); setPage(0); }}
+          onGradeChange={(v) => { setGrade(v); setPage(0); }}
           onSearch={handleSearch}
         />
+
+        {!isCompanyProfileLoading && !isCompanyProfileError && companyProfile === null && (
+          <div className="bg-blue-50 text-blue-700 text-sm rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+            <span>회사 프로필을 설정하면 적합도를 확인할 수 있습니다.</span>
+            <Link to="/company/profile" className="font-medium underline shrink-0 ml-3">
+              프로필 설정하기
+            </Link>
+          </div>
+        )}
+
+        {isCompanyProfileError && (
+          <div className="bg-red-50 text-red-600 text-sm rounded-lg px-4 py-3 mb-4 flex items-center justify-between">
+            <span>회사 프로필 정보를 불러오지 못해 적합도를 확인할 수 없습니다.</span>
+            <button
+              onClick={() => refetchCompanyProfile()}
+              className="font-medium underline shrink-0 ml-3"
+            >
+              다시 시도
+            </button>
+          </div>
+        )}
 
         {data && (
           <BidSummaryBar summary={data.summary} totalElements={data.page.totalElements} />

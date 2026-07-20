@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import PrivateRoute from './components/common/PrivateRoute';
 import BidListPage from './pages/BidListPage';
+import BidDetailPage from './pages/BidDetailPage';
 import CompanyProfilePage from './pages/CompanyProfilePage';
 import LoginPage from './pages/LoginPage';
 import SignupPage from './pages/SignupPage';
@@ -24,6 +25,14 @@ export default function App() {
           element={
             <PrivateRoute>
               <CompanyProfilePage />
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/bids/:bidId"
+          element={
+            <PrivateRoute>
+              <BidDetailPage />
             </PrivateRoute>
           }
         />

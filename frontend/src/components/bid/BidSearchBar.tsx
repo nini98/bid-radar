@@ -1,14 +1,16 @@
 import { useState } from 'react';
-import type { BidSortType } from '../../types/bid';
+import type { BidSortType, MatchGrade } from '../../types/bid';
 import { REGIONS } from '../../constants/region';
 
 interface Props {
   keyword: string;
   sort: BidSortType;
   region: string;
+  grade: MatchGrade | '';
   onKeywordChange: (v: string) => void;
   onSortChange: (v: BidSortType) => void;
   onRegionChange: (v: string) => void;
+  onGradeChange: (v: MatchGrade | '') => void;
   onSearch: () => void;
 }
 
@@ -18,7 +20,14 @@ const SORT_OPTIONS: { label: string; value: BidSortType }[] = [
   { label: '적합도순', value: 'SCORE' },
 ];
 
-export default function BidSearchBar({ keyword, sort, region, onKeywordChange, onSortChange, onRegionChange, onSearch }: Props) {
+const GRADE_OPTIONS: { label: string; value: MatchGrade | '' }[] = [
+  { label: '전체', value: '' },
+  { label: '적극 검토', value: 'STRONG_REVIEW' },
+  { label: '추천', value: 'RECOMMENDED' },
+  { label: '검토 필요', value: 'NEED_REVIEW' },
+];
+
+export default function BidSearchBar({ keyword, sort, region, grade, onKeywordChange, onSortChange, onRegionChange, onGradeChange, onSearch }: Props) {
   const [inputValue, setInputValue] = useState(keyword);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -56,6 +65,16 @@ export default function BidSearchBar({ keyword, sort, region, onKeywordChange, o
           <option value="">전체 지역</option>
           {REGIONS.map((r) => (
             <option key={r} value={r}>{r}</option>
+          ))}
+        </select>
+
+        <select
+          value={grade}
+          onChange={(e) => onGradeChange(e.target.value as MatchGrade | '')}
+          className="text-sm border border-gray-200 rounded px-2 py-1.5 focus:outline-none focus:ring-1 focus:ring-blue-400"
+        >
+          {GRADE_OPTIONS.map((opt) => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
 

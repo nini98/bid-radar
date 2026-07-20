@@ -1,5 +1,21 @@
 export type BidStatus = 'OPEN' | 'CLOSED' | 'CANCELED';
 export type BidSortType = 'LATEST' | 'DEADLINE' | 'SCORE';
+export type MatchGrade = 'STRONG_REVIEW' | 'RECOMMENDED' | 'NEED_REVIEW';
+
+export interface MatchResultSummary {
+  totalScore: number;
+  grade: MatchGrade;
+  displayText: string;
+}
+
+export interface MatchResult extends MatchResultSummary {
+  scoreTech: number | null;
+  scoreBusiness: number | null;
+  scoreBudget: number | null;
+  scoreRegion: number | null;
+  matchedKeywords: string | null;
+  scoreReason: string | null;
+}
 
 export interface BidNoticeSummary {
   id: number;
@@ -11,6 +27,7 @@ export interface BidNoticeSummary {
   status: BidStatus;
   bidDeadline: string | null;
   publishedAt: string | null;
+  matchResult: MatchResultSummary | null;
 }
 
 export interface BidAttachment {
@@ -44,6 +61,7 @@ export interface BidNoticeDetail {
   status: BidStatus;
   collectedAt: string | null;
   attachments: BidAttachment[];
+  matchResult: MatchResult | null;
 }
 
 export interface BidListSummary {
@@ -71,6 +89,7 @@ export interface BidSearchParams {
   budgetMin?: number;
   budgetMax?: number;
   deadlineDays?: number;
+  grade?: MatchGrade;
   sort?: BidSortType;
   page?: number;
   size?: number;

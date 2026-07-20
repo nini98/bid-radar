@@ -30,6 +30,7 @@ export function useSaveCompanyProfile() {
     },
     onSuccess: ({ profile }) => {
       queryClient.setQueryData(['company', 'me', user?.id], profile);
+      queryClient.invalidateQueries({ queryKey: ['bids'] });
     },
   });
 }
