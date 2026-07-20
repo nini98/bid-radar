@@ -125,7 +125,7 @@ Windows에서 WSL로 작업하는 경우 macOS/Linux와 명령어 자체는 동�
 
 ## 8. AWS / Terraform 셋업 (PC마다 반복해야 하는 것)
 
-`infra/terraform/`의 코드와 AWS에 떠 있는 실제 리소스는 clone/로그인과 무관하게 그대로 유지된다. 하지만 그걸 다루는 **로컬 도구(CLI)와 자격증명은 PC마다 새로 설정**해야 한다 (2026-07-19, PR #31 작업 중 실측).
+`infra/terraform/`의 코드와 AWS에 떠 있는 실제 리소스, 그리고 **state**는 clone/로그인과 무관하게 그대로 유지된다 (2026-07-20부로 state를 S3 backend(`bid-radar-terraform-state` 버킷)로 이전 완료 — PR #31). 하지만 그걸 다루는 **로컬 도구(CLI)와 자격증명은 PC마다 새로 설정**해야 한다 (2026-07-19, PR #31 작업 중 실측).
 
 ### 8-1. 필요한 CLI 설치
 
@@ -152,12 +152,18 @@ Region은 `ap-northeast-2`, Output format은 `json`으로 설정한다. 자격�
 
 **권한 분리 원칙**(자세한 배경은 `docs/bid-radar-aws-infra-summary.md`와 PR #31 참고): 조회는 항상 ViewOnly로, 실제 리소스 변경은 항상 관리자 프로파일로 **사용자가 직접** 실행한다. Claude Code 세션에는 관리자 자격증명을 연결하지 않는다.
 
-### 8-3. `infra/terraform/` 최초 실행
+### 8-3. `infra/terraform/` 실행
+
+state가 S3(`s3://bid-radar-terraform-state/bid-radar/terraform.tfstate`)에 있으므로, 새 PC에서도 `imports.tf`를 다시 실행하거나 로컬 state를 옮겨올 필요 없이 아래 `init`만 하면 기존 state를 그대로 이어받는다.
 
 ```bash
 cd infra/terraform
-AWS_PROFILE=bid-radar-viewonly terraform init
-AWS_PROFILE=bid-radar-viewonly terraform plan   # 실제 상태와 코드가 일치하는지 확인용 (읽기 전용)
+AWS_PROFILE=bid-radar-viewonly terraform init   # backend 연결 + provider 설치, 읽기 전용으로 가능
 ```
 
-리소스를 실제로 만들거나 지우는 `terraform apply`는 `AWS_PROFILE=jay-admin`(또는 새로 등록한 관리자 프로파일명)으로 실행한다.
+**주의**: backend가 `use_lockfile = true`(S3 native lock, Terraform 1.10+)를 쓰기 때문에, `terraform plan`도 락 파일(`*.tflock`)을 S3에 써야 해서 `bid-radar-viewonly`로는 실행할 수 없다 (`AccessDenied: s3:PutObject`). `plan`과 `apply`는 항상 `jay-admin`으로 실행한다 (2026-07-20 실측).
+
+```bash
+AWS_PROFILE=jay-admin terraform plan    # 실제 상태와 코드가 일치하는지 확인
+AWS_PROFILE=jay-admin terraform apply   # 실제로 변경 반영
+```
