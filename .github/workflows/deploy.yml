@@ -1,13 +1,20 @@
 name: Deploy
 
+# 2026-07-19부로 워크플로 자동 트리거를 잠시 멈춰뒀다. 비용 절감을 위해 NAT
+# Gateway/Interface VPC Endpoint(SSM 접속 경로 포함)를 삭제하고 EC2를 중지한
+# 상태라(PR #31, docs/bid-radar-aws-infra-summary.md 참고), 이 상태에서
+# main push마다 자동 실행되면 SSM 명령이 오프라인 인스턴스에 닿지 못해 매번
+# 실패한다. infra/terraform/으로 NAT/Endpoint를 복원하고 EC2를 재시작한
+# 뒤, 아래 on 블록을 push 트리거로 되돌린다.
 on:
-  push:
-    branches: [main]
-    paths:
-      - 'backend/**'
-      - 'frontend/**'
-      - 'infra/**'
-      - '.github/workflows/**'
+  workflow_dispatch:
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'backend/**'
+  #     - 'frontend/**'
+  #     - 'infra/**'
+  #     - '.github/workflows/**'
 
 env:
   AWS_REGION: ap-northeast-2
