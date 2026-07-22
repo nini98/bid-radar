@@ -8,7 +8,7 @@ Spring Boot 프로젝트를 초기화하고, 이후 Epic-1 작업의 기반이 �
 
 ## 파트
 
-Spring Boot
+backend
 
 ---
 

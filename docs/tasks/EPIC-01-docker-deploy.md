@@ -8,7 +8,7 @@ Docker 이미지를 ECR에 push하고, GitHub Actions CI/CD로 EC2에 자동 배
 
 ## 파트
 
-Spring Boot + Frontend + Infra
+backend + frontend + infra
 
 ---
 

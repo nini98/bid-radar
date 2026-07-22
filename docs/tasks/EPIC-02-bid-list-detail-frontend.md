@@ -8,7 +8,7 @@
 
 ## 파트
 
-Frontend
+frontend
 
 ---
 

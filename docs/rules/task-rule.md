@@ -17,7 +17,7 @@ Task 수행 방식과 Task 파일 구조를 정의한다.
 한 줄로 무엇을 만드는지 기술한다.
 
 ## 파트
-Spring Boot | AI Worker | Frontend
+backend | frontend | ai-worker | infra | docs
 
 ## 참조 Rule
 - docs/rules/springboot/entity-rule.md
@@ -34,6 +34,8 @@ Spring Boot | AI Worker | Frontend
 - [ ] 세부 작업 1
 - [ ] 세부 작업 2
 ```
+
+`파트` 값은 `docs/rules/issue-rule.md` §4 Part 라벨과 동일한 값을 쓴다 — Task와 Issue의 Part를 변환 없이 직접 비교하기 위함이다 (`docs/rules/issue-rule.md` §5 점검 절차에서 사용). 여러 파트에 걸치면 `+`로 연결한다 (예: `backend + frontend + infra`).
 
 ---
 
@@ -102,9 +104,10 @@ Task 수행 중이거나 Codex 리뷰 대응 중, `Done Condition`/PR 범위를 
 11. 파트별 Review Rule을 수행한다.
 12. Task 파일의 `Done Condition`과 `작업 항목`을 모두 `[x]`로 체크한다.
 13. 커밋한다.
-    - Spring Boot → `docs/rules/springboot/springboot-review-rule.md`
-    - AI Worker → `docs/rules/ai-worker/ai-worker-review-rule.md`
-    - Frontend → `docs/rules/frontend/frontend-review-rule.md`
+    - backend → `docs/rules/springboot/springboot-review-rule.md`
+    - ai-worker → `docs/rules/ai-worker/ai-worker-review-rule.md`
+    - frontend → `docs/rules/frontend/frontend-review-rule.md`
+    - infra, docs → 별도 파트별 Review Rule 없음 (`self-review-rule.md` 공통 검토로 충분)
 
 ---
 
