@@ -86,6 +86,7 @@ bid-radar/
 | 새 PC에서 개발 환경 셋업 시 | `docs/dev-setup.md` |
 | 커밋/푸시 시 | `docs/rules/git-rule.md` |
 | Task 수행 시 | `docs/rules/task-rule.md` |
+| GitHub Issue 생성/점검 시 | `docs/rules/issue-rule.md` |
 | 코드 완료 후 (공통 검토) | `docs/rules/self-review-rule.md` |
 | Spring Boot 작업 시 | `docs/rules/springboot/` |
 | Spring Boot 코드 완료 후 | `docs/rules/springboot/springboot-review-rule.md` |

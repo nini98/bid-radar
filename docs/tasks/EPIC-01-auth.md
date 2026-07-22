@@ -8,7 +8,7 @@ JWT Cookie 기반 인증 구조를 구현한다. 회원가입, 로그인, 토큰
 
 ## 파트
 
-Spring Boot
+backend
 
 ---
 

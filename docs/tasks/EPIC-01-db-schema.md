@@ -8,7 +8,7 @@ Epic-1에 필요한 핵심 테이블 스키마를 Flyway 마이그레이션 파�
 
 ## 파트
 
-Spring Boot
+backend
 
 ---
 

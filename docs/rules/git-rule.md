@@ -93,6 +93,8 @@ chore(config): application.yml 환경 분리 구조 적용
 
 브랜치는 태스크 착수 시점에 생성한다. 미리 만들어두지 않는다.
 
+브랜치 생성 전 open GitHub Issue 점검은 `docs/rules/issue-rule.md` §5를 따른다.
+
 ---
 
 ## 7. 머지 충돌 해결 규칙
