@@ -53,7 +53,7 @@ Issue를 "언제 GitHub Issue로 분리할지"(Task/PR 범위 판단)는 `docs/r
 
 새 브랜치를 생성하기 전(`docs/rules/git-rule.md` §6), 아래 순서로 open issue를 점검하고 사용자에게 결과를 보고한다.
 
-1. `gh issue list --state open`으로 목록을 확인한다.
+1. `gh issue list --state open --limit 1000`으로 목록을 확인한다 (`gh issue list` 기본 조회 개수는 30개라 그대로 쓰면 open issue가 많을 때 뒤쪽이 누락된다).
 2. 이번에 만들 브랜치/Task의 Part 라벨과 겹치는 이슈가 있는지 확인한다.
 3. 겹치는 이슈가 있으면 사용자에게 보고한다. **Part가 겹친다는 이유만으로 포함하거나, 이번 Task를 선행 차단하지 않는다** — 아래 기준으로 판단한다.
    - 이슈가 이번 Task와 **무관하게 독립적**이면 → **보류**: 사용자에게 보고 후 원래 Task를 그대로 진행한다. 보류 사유를 이슈 코멘트로 남기고 다음 점검 때 다시 판단
