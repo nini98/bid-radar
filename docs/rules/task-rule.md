@@ -19,6 +19,10 @@ Task 수행 방식과 Task 파일 구조를 정의한다.
 ## 파트
 backend | frontend | ai-worker | infra | docs
 
+## 관련 Issue
+- Issue: #19
+- 대상: 생성 시점 기준 Next Step 1~4
+
 ## 참조 Rule
 - docs/rules/springboot/entity-rule.md
 - docs/rules/springboot/repository-rule.md
@@ -36,6 +40,8 @@ backend | frontend | ai-worker | infra | docs
 ```
 
 `파트` 값은 `docs/rules/issue-rule.md` §4 Part 라벨과 동일한 값을 쓴다 — Task와 Issue의 Part를 변환 없이 직접 비교하기 위함이다 (`docs/rules/issue-rule.md` §5 점검 절차에서 사용). 여러 파트에 걸치면 `+`로 연결한다 (예: `backend + frontend + infra`).
+
+`## 관련 Issue` 섹션은 Task가 GitHub Issue에서 파생된 경우에만 작성한다. Task 생성 시점 기준의 출처와 범위를 남기는 참고용 스냅샷일 뿐이며, Issue 본문이 이후 수정되어도 자동으로 동기화되지 않는다. Task의 실행 범위와 완료 기준은 이 섹션이 아니라 해당 Task의 `Done Condition`을 기준으로 판단한다. Issue와 무관하게 시작하는 Task는 이 섹션을 생략한다.
 
 ---
 
@@ -59,6 +65,15 @@ Task 파일 작성 시 작업 내용에 맞는 Rule만 선택한다.
 ---
 
 ## 4. Task 수행 루프
+
+### 4-0. Issue 기반 Task 분해 규칙
+
+Issue에서 파생된 작업은 Task 파일을 만들기 전에 아래를 먼저 수행한다.
+
+1. 작업 수행자가 해당 Issue를 몇 개의 Task(= PR 단위)로 나눌지 분해안을 보고한다.
+2. 사용자 승인을 받은 뒤에만 Task 파일을 생성한다 (§2의 `## 관련 Issue` 섹션 포함).
+
+Issue와 무관하게 시작하는 Task는 이 절차를 적용하지 않는다.
 
 ### 시작 전
 
@@ -100,14 +115,24 @@ Task 수행 중이거나 Codex 리뷰 대응 중, `Done Condition`/PR 범위를 
 ### 완료 후
 
 9. `Done Condition`을 모두 충족했는지 확인한다.
-10. `docs/rules/self-review-rule.md`를 수행한다.
-11. 파트별 Review Rule을 수행한다.
-12. Task 파일의 `Done Condition`과 `작업 항목`을 모두 `[x]`로 체크한다.
-13. 커밋한다.
-    - backend → `docs/rules/springboot/springboot-review-rule.md`
-    - ai-worker → `docs/rules/ai-worker/ai-worker-review-rule.md`
-    - frontend → `docs/rules/frontend/frontend-review-rule.md`
-    - infra, docs → 별도 파트별 Review Rule 없음 (`self-review-rule.md` 공통 검토로 충분)
+10. 리뷰를 수행한다.
+    - `docs/rules/self-review-rule.md` (공통)
+    - 파트별 Review Rule: backend → `docs/rules/springboot/springboot-review-rule.md` / ai-worker → `docs/rules/ai-worker/ai-worker-review-rule.md` / frontend → `docs/rules/frontend/frontend-review-rule.md` / infra, docs → 별도 파트별 Review Rule 없음 (`self-review-rule.md`로 충분)
+11. Task 파일의 `Done Condition`과 `작업 항목`을 모두 `[x]`로 체크한다.
+12. 커밋하고 원격 브랜치를 푸시한 뒤 PR을 생성한다.
+13. Issue 기반 Task는 PR 본문에 `Refs #이슈번호`와 담당 Next Step 범위를 명시한다.
+
+    ```
+    Refs #19
+
+    담당 범위: Issue #19의 Next Step 1~4
+    ```
+
+    하나의 Issue를 여러 Task/PR이 나눠 처리하는 경우 `Closes`/`Fixes`/`Resolves`는 쓰지 않고 모든 PR에 `Refs`만 사용한다 — 이 키워드들은 PR 머지 시 GitHub이 Issue를 자동으로 닫아버려서, 체크박스 갱신 전에 Issue가 닫혀 `docs/rules/issue-rule.md` §5의 "open issue만 스캔"하는 안전망 범위를 벗어나기 때문이다.
+14. Issue 기반 Task의 PR이 머지되면, 아래 이중 트리거 중 해당하는 시점에 관련 Issue의 Next Step 체크박스를 갱신한다.
+    - **트리거 A (즉시)**: 사용자가 머지 사실을 알리면, PR 머지 상태를 확인하고 담당 Next Step 체크박스를 갱신한다.
+    - **트리거 B (안전망)**: 다음 브랜치 생성 전 점검(`docs/rules/issue-rule.md` §5)에서, open issue 중 `Refs #이슈번호`로 연결된 merged PR이 있는데 체크박스가 갱신되지 않은 경우를 확인해 복구한다. 이 처리는 지금 진행 중인 작업의 범위·순서에 영향을 주지 않는다.
+    - 체크박스를 갱신하는 즉시(트리거 A/B 어느 쪽이든), 해당 Issue의 모든 Next Step이 체크됐는지 함께 확인한다. 전부 체크됐다면 그 자리에서 바로 `gh issue close`로 Issue를 종료한다 — 종료 대상 PR은 이미 사용자가 머지를 승인한 것들이므로 별도 승인 없이 진행한다.
 
 ---
 
@@ -119,3 +144,4 @@ Task 수행 중이거나 Codex 리뷰 대응 중, `Done Condition`/PR 범위를 
 - `Done Condition`에 없는 것을 완료 기준으로 삼지 않는다.
 - `Out of Scope`에 해당하는 작업을 임의로 수행하지 않는다.
 - 설계 문서 없이 도메인 구조를 임의로 변경하지 않는다.
+- Issue 기반 Task의 PR 본문에 `Closes`/`Fixes`/`Resolves` 키워드를 사용하지 않는다 (Issue 자동 close로 인한 안전망 이탈 방지, `Refs`만 사용).
