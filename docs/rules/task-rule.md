@@ -19,9 +19,9 @@ Task 수행 방식과 Task 파일 구조를 정의한다.
 ## 파트
 backend | frontend | ai-worker | infra | docs
 
-## 관련 Issue
-- Issue: #19
-- 대상: 생성 시점 기준 Next Step 1~4
+## 관련 Issue (Issue에서 파생된 경우에만 작성, 아니면 섹션 자체를 생략)
+- Issue: #{이슈번호}
+- 대상: 생성 시점 기준 Next Step {번호 범위}
 
 ## 참조 Rule
 - docs/rules/springboot/entity-rule.md
