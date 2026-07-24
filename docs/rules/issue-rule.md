@@ -56,7 +56,7 @@ Next Step을 GitHub 체크박스 문법으로 고정하는 이유는 이슈 해�
 새 브랜치를 생성하기 전(`docs/rules/git-rule.md` §6), 아래 순서로 open issue를 점검하고 사용자에게 결과를 보고한다.
 
 1. `gh issue list --state open --limit 1000`으로 목록을 확인한다 (`gh issue list` 기본 조회 개수는 30개라 그대로 쓰면 open issue가 많을 때 뒤쪽이 누락된다).
-2. **안전망 점검**: 위 목록의 이슈 중 `Refs #이슈번호`로 연결된 merged PR이 있는데 Next Step 체크박스가 갱신되지 않은 게 있는지 확인한다 (예: `gh search prs --repo {owner}/{repo} --merged --match body "Refs #{이슈번호}"`, 정확한 옵션은 실행 시점에 `gh search prs --help`로 확인). 발견되면 체크박스를 갱신하고, 그 결과 모든 Next Step이 체크된 이슈는 그 자리에서 `gh issue close`로 종료한다(`docs/rules/task-rule.md` §4 트리거 B). 이 처리는 지금 만들려는 브랜치/Task의 진행에 영향을 주지 않는다.
+2. **안전망 점검**: 위 목록의 이슈 중 `Refs #이슈번호`로 연결된 merged PR이 있는데 Next Step 체크박스가 갱신되지 않은 게 있는지 확인한다 (예: `gh search prs --repo {owner}/{repo} --merged --match body "Refs #{이슈번호}" --limit 1000`, 정확한 옵션은 실행 시점에 `gh search prs --help`로 확인 — 기본 조회 개수는 30개라 `gh issue list`와 동일한 이유로 `--limit`을 명시해야 한다). 발견되면 체크박스를 갱신하고, 그 결과 모든 Next Step이 체크된 이슈는 그 자리에서 `gh issue close`로 종료한다(`docs/rules/task-rule.md` §4 트리거 B). 이 처리는 지금 만들려는 브랜치/Task의 진행에 영향을 주지 않는다.
 3. 이번에 만들 브랜치/Task의 Part 라벨과 겹치는 이슈가 있는지 확인한다.
 4. 겹치는 이슈가 있으면 사용자에게 보고한다. **Part가 겹친다는 이유만으로 포함하거나, 이번 Task를 선행 차단하지 않는다** — 아래 기준으로 판단한다.
    - 이슈가 이번 Task와 **무관하게 독립적**이면 → **보류**: 사용자에게 보고 후 원래 Task를 그대로 진행한다. 보류 사유를 이슈 코멘트로 남기고 다음 점검 때 다시 판단
