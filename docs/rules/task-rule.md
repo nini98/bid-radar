@@ -21,9 +21,10 @@ backend | frontend | ai-worker | infra | docs
 
 ## 관련 Issue (Issue에서 파생된 경우에만 작성, 아니면 섹션 자체를 생략)
 - Issue: #{이슈번호}
-- 담당 Next Step (생성 시점 원문 그대로 인용):
-  - [ ] {Next Step 항목 원문 1}
-  - [ ] {Next Step 항목 원문 2}
+
+담당 Next Step (생성 시점 원문 그대로 인용, Issue 본문과 동일하게 들여쓰기 없이 기록):
+- [ ] {Next Step 항목 원문 1}
+- [ ] {Next Step 항목 원문 2}
 
 ## 참조 Rule
 - docs/rules/springboot/entity-rule.md
@@ -74,7 +75,7 @@ Task 파일 작성 시 작업 내용에 맞는 Rule만 선택한다.
 
 Issue에서 파생된 작업은 Task 파일을 만들기 전에 아래를 먼저 수행한다.
 
-1. 작업 수행자가 해당 Issue를 몇 개의 Task(= PR 단위)로 나눌지 분해안을 보고한다.
+1. 작업 수행자가 해당 Issue를 몇 개의 Task(= PR 단위)로 나눌지 분해안을 보고한다. 이때 Next Step 항목 하나는 정확히 하나의 Task에만 배정한다 — 여러 Task가 하나의 Next Step을 나눠 담당하지 않는다 (한 Task가 여러 Next Step을 담당하는 것은 된다). 한 PR로 감당하기엔 항목이 너무 크면 Task를 쪼개는 대신, Issue 본문에서 그 Next Step 자체를 더 작은 여러 항목으로 재작성한 뒤 분해한다.
 2. 사용자 승인을 받은 뒤에만 Task 파일을 생성한다 (§2의 `## 관련 Issue` 섹션 포함).
 
 Issue와 무관하게 시작하는 Task는 이 절차를 적용하지 않는다.
