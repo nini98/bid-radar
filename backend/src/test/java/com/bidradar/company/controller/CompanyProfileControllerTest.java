@@ -196,8 +196,8 @@ class CompanyProfileControllerTest {
     }
 
     @Test
-    @DisplayName("PUT /api/companies/me 요청 시 preferredBidTypes에 임시 호환값 '전자시담(2인 이상)'을 보내면 200이 반환된다")
-    void saveMyProfile_전자시담_2인이상_임시호환값이면_200을_반환한다() throws Exception {
+    @DisplayName("PUT /api/companies/me 요청 시 preferredBidTypes에 명세 값 '전자시담(다자간)'을 보내면 200이 반환된다")
+    void saveMyProfile_전자시담_다자간이면_200을_반환한다() throws Exception {
         // given
         CompanyProfileResponse response = new CompanyProfileResponse(
                 1L, "델타소프트", null, null, null, null, null, null, null, null,
@@ -206,6 +206,27 @@ class CompanyProfileControllerTest {
         );
         given(companyProfileService.saveProfile(eq(1L), any())).willReturn(response);
 
+        CompanyProfileRequest request = new CompanyProfileRequest(
+                "델타소프트", null, null, null, null, null, null, null, null,
+                List.of(), List.of(), List.of(), List.of(),
+                new CompanyProfileRequest.BidPreferenceRequest(List.of(), null, null, null, List.of("전자시담(다자간)"), List.of()),
+                null, null, null
+        );
+
+        // when // then
+        mockMvc.perform(put("/api/companies/me")
+                        .with(authentication(authOf(1L)))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.header.resultCode").value("200"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/companies/me 요청 시 preferredBidTypes에 정정 전 오타값 '전자시담(2인 이상)'을 보내면 400이 반환된다")
+    void saveMyProfile_전자시담_2인이상_구값이면_400을_반환한다() throws Exception {
+        // given
         CompanyProfileRequest request = new CompanyProfileRequest(
                 "델타소프트", null, null, null, null, null, null, null, null,
                 List.of(), List.of(), List.of(), List.of(),
@@ -219,8 +240,8 @@ class CompanyProfileControllerTest {
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.header.resultCode").value("200"));
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.header.resultCode").value("400"));
     }
 
     @Test
