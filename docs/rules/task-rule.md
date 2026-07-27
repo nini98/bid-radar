@@ -124,12 +124,14 @@ Task 수행 중이거나 Codex 리뷰 대응 중, `Done Condition`/PR 범위를 
     - 파트별 Review Rule: backend → `docs/rules/springboot/springboot-review-rule.md` / ai-worker → `docs/rules/ai-worker/ai-worker-review-rule.md` / frontend → `docs/rules/frontend/frontend-review-rule.md` / infra, docs → 별도 파트별 Review Rule 없음 (`self-review-rule.md`로 충분)
 11. Task 파일의 `Done Condition`과 `작업 항목`을 모두 `[x]`로 체크한다.
 12. 커밋하고 원격 브랜치를 푸시한 뒤 PR을 생성한다.
-13. Issue 기반 Task는 PR 본문에 `Refs #이슈번호`와 담당 Next Step 범위를 명시한다.
+13. Issue 기반 Task는 PR 본문에 `Refs #이슈번호`와 담당 Next Step 원문을 명시한다. 번호가 아니라 Task 파일의 `## 관련 Issue`에 스냅샷된 원문을 그대로 옮겨 적는다 (번호를 쓰지 않는 이유는 §2 설명 참고).
 
     ```
     Refs #19
 
-    담당 범위: Issue #19의 Next Step 1~4
+    담당 Next Step:
+    - [ ] Notion 문서 재확인
+    - [ ] 백엔드 테스트 픽스처 정리
     ```
 
     하나의 Issue를 여러 Task/PR이 나눠 처리하는 경우 `Closes`/`Fixes`/`Resolves`는 쓰지 않고 모든 PR에 `Refs`만 사용한다 — 이 키워드들은 PR 머지 시 GitHub이 Issue를 자동으로 닫아버려서, 체크박스 갱신 전에 Issue가 닫혀 `docs/rules/issue-rule.md` §5의 "open issue만 스캔"하는 안전망 범위를 벗어나기 때문이다.
