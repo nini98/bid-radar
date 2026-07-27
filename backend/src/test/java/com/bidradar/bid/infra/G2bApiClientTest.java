@@ -170,7 +170,7 @@ class G2bApiClientTest {
                           "bidNtceOrd": "00",
                           "bidNtceNm": "%s",
                           "ntceInsttNm": "테스트기관",
-                          "bidMethdNm": "일반경쟁",
+                          "bidMethdNm": "전자입찰",
                           "bidNtceDt": "2025-06-17 09:00:00",
                           "bidClseDt": "2025-06-20 18:00:00"
                         }
