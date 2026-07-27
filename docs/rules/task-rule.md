@@ -21,7 +21,9 @@ backend | frontend | ai-worker | infra | docs
 
 ## 관련 Issue (Issue에서 파생된 경우에만 작성, 아니면 섹션 자체를 생략)
 - Issue: #{이슈번호}
-- 대상: 생성 시점 기준 Next Step {번호 범위}
+- 담당 Next Step (생성 시점 원문 그대로 인용):
+  - [ ] {Next Step 항목 원문 1}
+  - [ ] {Next Step 항목 원문 2}
 
 ## 참조 Rule
 - docs/rules/springboot/entity-rule.md
@@ -42,6 +44,8 @@ backend | frontend | ai-worker | infra | docs
 `파트` 값은 `docs/rules/issue-rule.md` §4 Part 라벨과 동일한 값을 쓴다 — Task와 Issue의 Part를 변환 없이 직접 비교하기 위함이다 (`docs/rules/issue-rule.md` §5 점검 절차에서 사용). 여러 파트에 걸치면 `+`로 연결한다 (예: `backend + frontend + infra`).
 
 `## 관련 Issue` 섹션은 Task가 GitHub Issue에서 파생된 경우에만 작성한다. Task 생성 시점 기준의 출처와 범위를 남기는 참고용 스냅샷일 뿐이며, Issue 본문이 이후 수정되어도 자동으로 동기화되지 않는다. Task의 실행 범위와 완료 기준은 이 섹션이 아니라 해당 Task의 `Done Condition`을 기준으로 판단한다. Issue와 무관하게 시작하는 Task는 이 섹션을 생략한다.
+
+담당 Next Step은 번호가 아니라 **항목 원문을 그대로 인용**해서 남긴다. Issue의 Next Step은 순서·번호가 고정되지 않으므로, 이후 항목이 삽입·삭제·재정렬되면 번호 범위는 원래 가리키던 항목을 더 이상 가리키지 않게 된다. 원문 인용은 이런 변경에도 내용으로 식별할 수 있다 (문구 자체가 수정되는 경우의 처리는 아래 §4 14번 참고).
 
 ---
 
@@ -132,6 +136,7 @@ Task 수행 중이거나 Codex 리뷰 대응 중, `Done Condition`/PR 범위를 
 14. Issue 기반 Task의 PR이 머지되면, 아래 이중 트리거 중 해당하는 시점에 관련 Issue의 Next Step 체크박스를 갱신한다.
     - **트리거 A (즉시)**: 사용자가 머지 사실을 알리면, PR 머지 상태를 확인하고 담당 Next Step 체크박스를 갱신한다.
     - **트리거 B (안전망)**: 다음 브랜치 생성 전 점검(`docs/rules/issue-rule.md` §5)에서, open issue 중 `Refs #이슈번호`로 연결된 merged PR이 있는데 체크박스가 갱신되지 않은 경우를 확인해 복구한다. 이 처리는 지금 진행 중인 작업의 범위·순서에 영향을 주지 않는다.
+    - 체크박스를 찾을 때는 순번이 아니라 Task의 `## 관련 Issue`에 스냅샷된 **원문과 정확히 일치하는 줄**을 Issue 본문에서 찾아 체크한다 (Next Step은 순서·번호가 고정되지 않아 삽입/재정렬되면 번호가 다른 항목을 가리킬 수 있음). 일치하는 문구를 찾을 수 없으면(그 사이 문구 자체가 수정·삭제됨) 임의로 체크하지 않고 사용자에게 확인한다.
     - 체크박스를 갱신하는 즉시(트리거 A/B 어느 쪽이든), 해당 Issue의 모든 Next Step이 체크됐는지 함께 확인한다. 전부 체크됐다면 그 자리에서 바로 `gh issue close`로 Issue를 종료한다 — 종료 대상 PR은 이미 사용자가 머지를 승인한 것들이므로 별도 승인 없이 진행한다.
 
 ---
