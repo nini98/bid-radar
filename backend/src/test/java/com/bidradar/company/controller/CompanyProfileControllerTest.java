@@ -175,6 +175,55 @@ class CompanyProfileControllerTest {
     }
 
     @Test
+    @DisplayName("PUT /api/companies/me 요청 시 preferredBidTypes에 허용되지 않은 값이 있으면 400이 반환된다")
+    void saveMyProfile_preferredBidTypes_허용되지않은값이면_400을_반환한다() throws Exception {
+        // given
+        CompanyProfileRequest request = new CompanyProfileRequest(
+                "델타소프트", null, null, null, null, null, null, null, null,
+                List.of(), List.of(), List.of(), List.of(),
+                new CompanyProfileRequest.BidPreferenceRequest(List.of(), null, null, null, List.of("존재하지않는값"), List.of()),
+                null, null, null
+        );
+
+        // when // then
+        mockMvc.perform(put("/api/companies/me")
+                        .with(authentication(authOf(1L)))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.header.resultCode").value("400"));
+    }
+
+    @Test
+    @DisplayName("PUT /api/companies/me 요청 시 preferredBidTypes에 임시 호환값 '전자시담(2인 이상)'을 보내면 200이 반환된다")
+    void saveMyProfile_전자시담_2인이상_임시호환값이면_200을_반환한다() throws Exception {
+        // given
+        CompanyProfileResponse response = new CompanyProfileResponse(
+                1L, "델타소프트", null, null, null, null, null, null, null, null,
+                List.of(), List.of(), List.of(), List.of(), null,
+                null, null, null, null
+        );
+        given(companyProfileService.saveProfile(eq(1L), any())).willReturn(response);
+
+        CompanyProfileRequest request = new CompanyProfileRequest(
+                "델타소프트", null, null, null, null, null, null, null, null,
+                List.of(), List.of(), List.of(), List.of(),
+                new CompanyProfileRequest.BidPreferenceRequest(List.of(), null, null, null, List.of("전자시담(2인 이상)"), List.of()),
+                null, null, null
+        );
+
+        // when // then
+        mockMvc.perform(put("/api/companies/me")
+                        .with(authentication(authOf(1L)))
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.header.resultCode").value("200"));
+    }
+
+    @Test
     @DisplayName("POST /api/companies/me/recalculate 요청 시 200을 반환하고 비동기 재계산을 트리거한다")
     void recalculate_정상요청시_200을_반환한다() throws Exception {
         // when // then
