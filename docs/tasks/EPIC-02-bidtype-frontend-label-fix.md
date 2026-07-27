@@ -23,6 +23,7 @@ frontend + backend
 - [x] 누락된 입찰방식 선택지(`전자입찰/직찰`, `전자/직찰/우편/상시`, `복수견적(역경매)`) 추가 여부가 결정되고 반영됨 (결정: 3개 전부 추가, 명세에 있는 값을 임의로 제외할 근거 없음)
 - [x] (범위 확장) `backend CompanyProfileRequest`의 `@AllowedValues`에서 임시 호환값 `전자시담(2인 이상)` 제거됨 (이전 Task의 "후속 조치" 예고 항목)
 - [x] 위 백엔드 변경에 맞춰 `CompanyProfileControllerTest`의 호환값 관련 테스트가 갱신됨
+- [x] (범위 확장, Codex 리뷰 P1 발견) 기존에 `전자시담(2인 이상)`을 저장한 회사 프로필이 있어도 프로필 저장이 막히지 않도록 Flyway migration으로 기존 데이터를 `전자시담(다자간)`으로 정정함
 
 ## Out of Scope
 - 문자열 완전일치 비교 방식 자체의 변경 (Issue #19에서 이미 검토 완료, 유지로 결론)
@@ -34,3 +35,4 @@ frontend + backend
 - [x] `backend/.../CompanyProfileRequest.java`의 `@AllowedValues` 목록에서 임시 호환값 제거
 - [x] `backend/.../CompanyProfileControllerTest.java`의 호환값 테스트 갱신 (구 값은 거부, 신 값은 허용 확인)
 - [x] (범위 확장) `docs/rules/frontend/frontend-rule.md`에 "정적 선택지 데이터의 출처 판단" 기준(3-1) 추가 — 별도 PR 없이 이번 브랜치에 포함 (사용자 승인)
+- [x] (범위 확장, Codex 리뷰 P1 발견) `V12__migrate_legacy_bidtype_value.sql` Flyway migration 추가 — `company_bid_preferences.preferred_bid_types`에 남은 오타값을 명세 값으로 정정
