@@ -139,7 +139,9 @@ Repository는 개별 영속성 작업만 수행하고, 트랜잭션 조합 책�
 
 ## 12. 트랜잭션 커밋 이후 비동기 후속 작업 트리거 규칙
 
-`@Transactional` 메서드 안에서 **다른 클래스**의 `@Async` 메서드를 호출하는 경우, self-invocation(§11)이 아니라 프록시를 정상적으로 거치더라도 별도의 문제가 생길 수 있다. `@Async` 호출은 별도 스레드·별도 DB 커넥션(별도 트랜잭션)에서 즉시 실행을 시작하는데, 호출한 `@Transactional` 메서드는 그 시점에 아직 커밋 전이다. READ COMMITTED 격리수준(PostgreSQL 기본값)에서는 커밋되지 않은 변경이 다른 커넥션에 보이지 않으므로, 비동기 작업이 이번 트랜잭션에서 방금 바뀐 데이터를 못 보고 이전 상태를 읽을 수 있다.
+`@Transactional` 메서드 안에서 **다른 클래스**의 `@Async` 메서드를 호출하는 경우, self-invocation(§11)이 아니라 프록시를 정상적으로 거치더라도 별도의 문제가 생길 수 있다. `@Async`는 실행 스레드만 전환할 뿐 트랜잭션이나 DB 커넥션을 스스로 만들지 않는다. 다만 스프링의 트랜잭션 컨텍스트는 스레드에 바인딩되므로, 새로 전환된 스레드에는 이어받을 트랜잭션이 없다 — 그 스레드에서 `@Transactional` 코드가 실행되면(기본 전파 옵션 `REQUIRED` 기준) 이어받을 트랜잭션이 없으니 새 트랜잭션을 시작한다. 호출한 `@Transactional` 메서드는 그 시점에 아직 커밋 전이므로, READ COMMITTED 격리수준(PostgreSQL 기본값)에서는 새로 시작된 트랜잭션이 그 커밋 전 변경을 보지 못하고 이전 상태를 읽을 수 있다.
+
+비동기 메서드 자신이 여러 건의 쓰기를 수행해야 한다면, `@Async`가 트랜잭션 경계를 대신 잡아주지 않으므로 §3-1 기준대로 명시적인 `@Transactional`을 별도로 붙여야 한다. 그러지 않으면 각 쓰기가 개별적으로 커밋되어, 중간에 실패했을 때 일부만 저장된 상태로 남을 수 있다.
 
 - 트랜잭션 커밋 이후에만 시작해야 하는 비동기 후속 작업은 서비스 메서드를 직접 호출하지 않는다.
 - 대신 도메인 이벤트를 발행하고, `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`와 `@Async`를 함께 붙인 리스너에서 처리한다.
@@ -149,6 +151,14 @@ Repository는 개별 영속성 작업만 수행하고, 트랜잭션 조합 책�
 - 이벤트 타입은 사건마다 별도 클래스로 정의한다. 스프링은 이벤트 객체의 **타입**으로 리스너를 매칭하므로, 서로 다른 사건에 같은 DTO 타입을 재사용하면 의도치 않은 리스너까지 함께 호출된다.
 
 참고 구현: `BidNoticeProcessor.process()`(이벤트 발행) → `BidNoticeCollectedEvent` → `BidMatchEventListener.handle()`(`@Async("matchTaskExecutor")` + `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`).
+
+### 12-1. Best-effort와 반드시 실행돼야 하는 작업의 구분
+
+`ApplicationEventPublisher` + `@Async` 조합은 이벤트를 어디에도 영속화하지 않는다. 트랜잭션 커밋 이후, 리스너가 실제로 실행되기 전에 프로세스가 종료되거나(배포, 장애), 대상 스레드풀(예: `matchTaskExecutor`)의 큐가 가득 차 제출 자체가 거부되면(기본 `AbortPolicy`), 그 후속 작업은 재시도 없이 조용히 유실된다.
+
+- 유실돼도 다른 계기로 자연히 정정되는 **best-effort 작업**에만 이 조합을 쓴다. 판단 기준: "이 작업이 유실됐을 때, 그 사실을 아무도 모른 채 넘어가도 되는가." 예: `BidNoticeCollectedEvent`가 유실돼 공고 하나의 초기 매칭 계산이 빠지더라도, 해당 회사가 이후 `RecalculateService`로 재계산하면 전체 공고 기준으로 다시 계산되어 정정된다 — best-effort로 허용 가능한 사례.
+- 유실을 허용할 수 없는 **반드시 실행돼야 하는 작업**(예: 결제 후속 처리, 반드시 한 번은 발생해야 하는 알림)에는 이 조합을 쓰지 않는다. 대신 트랜잭션 안에서 실행 요청 자체를 DB에 영속화하는 방식(transactional outbox 패턴, 또는 메시지 브로커로 발행)을 검토한다.
+- 반드시 실행돼야 하는 작업으로 durable 경로를 택했다면, 전달 방식이 보통 at-least-once(최소 한 번 이상 전달)를 보장하므로 소비자(리스너) 로직은 같은 이벤트가 중복 전달돼도 결과가 같아야 한다(멱등성). 실행이 실패했을 때는 로그에만 남기고 조용히 삼키지 말고, 재시도되거나 최소한 관측 가능한 상태로 남겨야 한다.
 
 ---
 
@@ -175,4 +185,5 @@ Repository는 개별 영속성 작업만 수행하고, 트랜잭션 조합 책�
 - 실패는 예외 전파로 롤백시키고, 경쟁 실패는 빈 결과나 0건 업데이트로 흡수한다.
 - `@Transactional`/`@Async` 메서드는 같은 클래스 내부에서 직접 호출하지 않는다 (self-invocation 시 프록시 우회, 동기 실행됨).
 - 트랜잭션 커밋 이후에만 시작해야 하는 비동기 후속 작업은 직접 호출 대신 도메인 이벤트 + `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` 조합으로 트리거한다.
+- `ApplicationEventPublisher` + `@Async`는 전달을 영속화하지 않아 유실될 수 있으므로, 유실이 다른 계기로 정정되는 best-effort 작업에만 쓰고 반드시 실행돼야 하는 작업에는 transactional outbox 등 durable한 방식을 쓴다.
 - 실행 순서가 결과에 영향을 주는 영속성 작업(제약조건이 걸린 삭제 후 재삽입 등)은 명시적 `flush()`로 순서를 강제한다.
