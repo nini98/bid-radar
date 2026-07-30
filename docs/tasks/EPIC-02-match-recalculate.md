@@ -23,7 +23,7 @@ backend
 
 ## Done Condition
 
-- [x] 신규 공고가 `bid_notices`에 커밋된 이후, 전체 회사에 대해 `bid_match_results`가 자동 생성된다
+- [x] 신규 공고가 `bid_notices`에 커밋된 이후, 전체 회사에 대해 `bid_match_results`가 best-effort로 자동 생성된다 (`ApplicationEventPublisher` + `@Async`는 전달을 영속화하지 않아, 커밋 후 리스너 실행 전 프로세스 종료나 스레드풀 큐 포화 시 유실될 수 있다. 전체 회사에 대한 자동 복구를 보장하는 요구사항은 아니며, 유실된 회사는 각자 `POST /api/companies/me/recalculate`를 호출해야 보완된다. Codex 리뷰, PR #42 참고)
 - [x] 매칭 계산은 공고 저장 트랜잭션과 분리되어 실행된다 (매칭 계산 실패가 공고 저장에 영향을 주지 않는다)
 - [x] `POST /api/companies/me/recalculate` 요청 시 즉시 응답이 반환되고, 실제 재계산은 비동기(`@Async`)로 수행된다
 - [x] 재계산은 AI 분석을 재실행하지 않고 `bid_match_results`만 갱신한다

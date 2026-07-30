@@ -122,6 +122,7 @@ Repository는 개별 영속성 작업만 수행하고, 트랜잭션 조합 책�
 - 동시성 경쟁 상황과 실제 실패를 같은 방식으로 처리하지 않는다.
 - Repository에 트랜잭션 조합 책임을 두지 않는다.
 - `@Transactional`/`@Async` 메서드를 같은 클래스 내부에서 직접 호출(self-invocation)하지 않는다.
+- 커밋 이후에만 실행돼야 하는 비동기 작업을 `@Transactional` 메서드 안에서 다른 클래스의 `@Async` 메서드로 직접 호출하지 않는다 (커밋 전 데이터를 읽을 수 있음 — `AFTER_COMMIT` 이벤트 리스너로 대체한다).
 
 ---
 
@@ -136,7 +137,21 @@ Repository는 개별 영속성 작업만 수행하고, 트랜잭션 조합 책�
 
 ---
 
-## 12. Hibernate 쓰기 지연과 실행 순서 규칙
+## 12. 트랜잭션 커밋 이후 비동기 후속 작업 트리거 규칙
+
+`@Transactional` 메서드 안에서 다른 클래스의 `@Async` 메서드를 호출하면, self-invocation(§11)이 아니어도 문제가 생길 수 있다. `@Async`는 실행 스레드만 전환할 뿐 트랜잭션을 스스로 만들지 않지만, 스레드가 바뀌면 트랜잭션 컨텍스트를 이어받지 못해 그 안에서 실행되는 `@Transactional` 코드는 새 트랜잭션을 시작한다. 호출자의 트랜잭션이 아직 커밋 전이면, 새로 시작된 트랜잭션은 그 변경을 보지 못하고 이전 상태를 읽을 수 있다.
+
+- 트랜잭션 커밋 이후에만 시작해야 하는 비동기 후속 작업은 서비스 메서드를 직접 호출하지 않는다.
+- 대신 도메인 이벤트를 발행하고, `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)`와 `@Async`를 함께 붙인 리스너에서 처리한다. `@TransactionalEventListener`만 있으면 커밋 직후 호출자와 같은 스레드에서 동기 실행돼 블로킹되므로 둘 다 필요하다.
+- 이벤트 발행 시점에 활성 트랜잭션이 없으면 `@TransactionalEventListener`는 기본적으로 실행되지 않는다 (필요하면 `fallbackExecution = true`). 트랜잭션이 롤백되면 실행되지 않는다 — `@Transactional` 테스트는 기본적으로 종료 시 롤백하므로 `@Commit` 등 별도 처리 없이는 테스트에서 검증할 수 없다.
+- 이벤트 타입은 사건마다 별도 클래스로 정의한다. 스프링은 이벤트 객체의 타입으로 리스너를 매칭하므로, 같은 타입을 여러 사건에 재사용하면 의도치 않은 리스너까지 호출된다.
+- 비동기 메서드 자신이 여러 건의 쓰기를 수행한다면 §3-1 기준대로 명시적 `@Transactional`을 별도로 붙인다 — 그러지 않으면 각 쓰기가 개별 커밋되어 중간 실패 시 일부만 저장될 수 있다.
+
+참고 구현: `BidNoticeProcessor.process()`(이벤트 발행) → `BidNoticeCollectedEvent` → `BidMatchEventListener.handle()`(`@Async` + `@TransactionalEventListener(phase = AFTER_COMMIT)`).
+
+---
+
+## 13. Hibernate 쓰기 지연과 실행 순서 규칙
 
 영속성 컨텍스트는 Repository 메서드를 호출한 코드 순서가 아니라, 액션 타입별로 정해진 내부 순서(기본적으로 insert → update → delete)로 SQL을 모아 flush한다. 그래서 트랜잭션 안에서 코드상 실행 순서와 실제 DB 실행 순서가 어긋날 수 있다.
 
@@ -150,7 +165,7 @@ Repository는 개별 영속성 작업만 수행하고, 트랜잭션 조합 책�
 
 ---
 
-## 13. 한 줄 요약
+## 14. 한 줄 요약
 
 - 쓰기 유스케이스는 Service/Processor 메서드 단위 `@Transactional`로 묶는다.
 - 조회 유스케이스는 `@Transactional(readOnly = true)`를 명시한다.
@@ -158,4 +173,5 @@ Repository는 개별 영속성 작업만 수행하고, 트랜잭션 조합 책�
 - 장기 실행 작업은 선점 트랜잭션과 실행 트랜잭션을 분리한다.
 - 실패는 예외 전파로 롤백시키고, 경쟁 실패는 빈 결과나 0건 업데이트로 흡수한다.
 - `@Transactional`/`@Async` 메서드는 같은 클래스 내부에서 직접 호출하지 않는다 (self-invocation 시 프록시 우회, 동기 실행됨).
+- 트랜잭션 커밋 이후에만 시작해야 하는 비동기 후속 작업은 직접 호출 대신 도메인 이벤트 + `@TransactionalEventListener(AFTER_COMMIT)` + `@Async` 조합으로 트리거한다.
 - 실행 순서가 결과에 영향을 주는 영속성 작업(제약조건이 걸린 삭제 후 재삽입 등)은 명시적 `flush()`로 순서를 강제한다.
