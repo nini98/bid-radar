@@ -39,6 +39,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -82,7 +83,7 @@ public class CompanyProfileService {
         );
         company = companyRepository.save(company);
 
-        acquireCalculationLock(company);
+        String lockToken = acquireCalculationLock(company);
 
         replaceTechTags(company, techTags);
         replaceBusinessAreas(company, businessAreas);
@@ -90,23 +91,25 @@ public class CompanyProfileService {
         replaceProjectExperiences(company, request.projectExperiences());
         replaceBidPreference(company, request.bidPreference());
 
-        eventPublisher.publishEvent(new CompanyProfileSavedEvent(company.getId()));
+        eventPublisher.publishEvent(new CompanyProfileSavedEvent(company.getId(), lockToken));
 
         return buildResponse(company);
     }
 
-    private void acquireCalculationLock(Company company) {
+    private String acquireCalculationLock(Company company) {
+        String newToken = UUID.randomUUID().toString();
         Optional<MatchCalculationStatus> existing = matchCalculationStatusRepository.findByCompanyId(company.getId());
         if (existing.isEmpty()) {
-            matchCalculationStatusRepository.save(MatchCalculationStatus.start(company));
-            return;
+            matchCalculationStatusRepository.save(MatchCalculationStatus.start(company, newToken));
+            return newToken;
         }
 
         LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(CALCULATION_LOCK_STALE_MINUTES);
-        int acquired = matchCalculationStatusRepository.acquireLock(existing.get().getId(), staleBefore);
+        int acquired = matchCalculationStatusRepository.acquireLock(existing.get().getId(), staleBefore, newToken);
         if (acquired == 0) {
-            throw new ApiException(ResultCode.CONFLICT);
+            throw new ApiException(ResultCode.MATCH_CALCULATION_IN_PROGRESS);
         }
+        return newToken;
     }
 
     private List<TechTag> validateTechTags(List<Long> techTagIds) {

@@ -249,34 +249,34 @@ class CompanyProfileServiceTest {
     }
 
     @Test
-    @DisplayName("이미 계산이 진행 중이고 5분 이내면 CONFLICT 예외가 발생하고 저장이 진행되지 않는다")
+    @DisplayName("이미 계산이 진행 중이고 5분 이내면 전용 CONFLICT 예외가 발생하고 저장이 진행되지 않는다")
     void saveProfile_계산진행중이면_CONFLICT예외() {
         // given
         User user = User.create("owner@bidradar.com", "hash", "홍길동");
         Company existing = Company.create(user, "기존회사");
-        MatchCalculationStatus status = MatchCalculationStatus.start(existing);
+        MatchCalculationStatus status = MatchCalculationStatus.start(existing, "old-token");
         CompanyProfileRequest request = emptyRequest("변경된회사");
         given(companyRepository.findByUserId(1L)).willReturn(Optional.of(existing));
         given(companyRepository.save(existing)).willReturn(existing);
         given(matchCalculationStatusRepository.findByCompanyId(any())).willReturn(Optional.of(status));
-        given(matchCalculationStatusRepository.acquireLock(any(), any())).willReturn(0);
+        given(matchCalculationStatusRepository.acquireLock(any(), any(), any())).willReturn(0);
 
         // when // then
         assertThatThrownBy(() -> companyProfileService.saveProfile(1L, request))
                 .isInstanceOf(ApiException.class)
-                .satisfies(e -> assertThat(((ApiException) e).getResultCode()).isEqualTo(ResultCode.CONFLICT));
+                .satisfies(e -> assertThat(((ApiException) e).getResultCode()).isEqualTo(ResultCode.MATCH_CALCULATION_IN_PROGRESS));
 
         verify(companyTechTagRepository, never()).deleteAllByCompanyId(any());
         verify(eventPublisher, never()).publishEvent(any());
     }
 
     @Test
-    @DisplayName("계산 상태가 IN_PROGRESS가 아니거나 락이 만료됐으면 저장이 성공하고 이벤트가 발행된다")
+    @DisplayName("계산 상태가 IN_PROGRESS가 아니거나 락이 만료됐으면 저장이 성공하고 새 토큰으로 이벤트가 발행된다")
     void saveProfile_락이없거나만료면_저장성공하고_이벤트발행() {
         // given
         User user = User.create("owner@bidradar.com", "hash", "홍길동");
         Company existing = Company.create(user, "기존회사");
-        MatchCalculationStatus status = MatchCalculationStatus.start(existing);
+        MatchCalculationStatus status = MatchCalculationStatus.start(existing, "old-token");
         CompanyProfileRequest request = emptyRequest("변경된회사");
         given(companyRepository.findByUserId(1L)).willReturn(Optional.of(existing));
         given(companyRepository.save(existing)).willReturn(existing);
@@ -286,7 +286,7 @@ class CompanyProfileServiceTest {
         given(companyProjectExperienceRepository.findByCompanyId(any())).willReturn(List.of());
         given(companyBidPreferenceRepository.findByCompanyId(any())).willReturn(Optional.empty());
         given(matchCalculationStatusRepository.findByCompanyId(any())).willReturn(Optional.of(status));
-        given(matchCalculationStatusRepository.acquireLock(any(), any())).willReturn(1);
+        given(matchCalculationStatusRepository.acquireLock(any(), any(), any())).willReturn(1);
 
         // when
         companyProfileService.saveProfile(1L, request);

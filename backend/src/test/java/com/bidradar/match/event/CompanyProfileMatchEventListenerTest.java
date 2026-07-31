@@ -7,30 +7,36 @@ import com.bidradar.bid.service.command.BidNoticeCreateCommand;
 import com.bidradar.company.domain.Company;
 import com.bidradar.company.event.CompanyProfileSavedEvent;
 import com.bidradar.company.repository.CompanyRepository;
-import com.bidradar.match.domain.MatchCalculationStatus;
 import com.bidradar.match.domain.MatchCalculationStatusType;
 import com.bidradar.match.repository.MatchCalculationStatusRepository;
 import com.bidradar.match.service.MatchCalculationService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.core.task.TaskExecutor;
+import org.springframework.core.task.TaskRejectedException;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class CompanyProfileMatchEventListenerTest {
+
+    private static final String TOKEN = "test-token";
 
     @Mock
     CompanyRepository companyRepository;
@@ -40,6 +46,8 @@ class CompanyProfileMatchEventListenerTest {
     MatchCalculationService matchCalculationService;
     @Mock
     MatchCalculationStatusRepository matchCalculationStatusRepository;
+    @Mock
+    TaskExecutor matchTaskExecutor;
 
     @InjectMocks
     CompanyProfileMatchEventListener listener;
@@ -52,41 +60,49 @@ class CompanyProfileMatchEventListenerTest {
             "EXT-2", "G2B", "공고 B", null, null, null, null, null, null, null,
             null, null, null, null, null));
 
+    @BeforeEach
+    void setUp() {
+        // matchTaskExecutor는 @Async 대신 리스너가 직접 호출하는 대상이라, 테스트에서는
+        // "제출된 작업을 즉시 동기 실행"하도록 스텁해야 기존처럼 결정론적으로 검증할 수 있다.
+        // lenient(): 제출 거부를 검증하는 테스트에서는 이 기본 스텁이 재정의되어 쓰이지 않으므로,
+        // strict stubbing이 "사용되지 않은 스텁"으로 오인하지 않게 한다.
+        lenient().doAnswer(invocation -> {
+            Runnable task = invocation.getArgument(0);
+            task.run();
+            return null;
+        }).when(matchTaskExecutor).execute(any());
+    }
+
     @Test
     @DisplayName("회사의 전체 공고에 대해 매칭 계산을 수행하고 상태를 DONE으로 기록한다")
     void 전체_공고에_대해_매칭계산을_수행하고_DONE으로_기록한다() {
         // given
         given(companyRepository.findById(1L)).willReturn(Optional.of(company));
         given(bidNoticeRepository.findAll()).willReturn(List.of(bidA, bidB));
-        MatchCalculationStatus status = MatchCalculationStatus.start(company);
-        given(matchCalculationStatusRepository.findByCompanyId(company.getId())).willReturn(Optional.of(status));
 
         // when
-        listener.handle(new CompanyProfileSavedEvent(1L));
+        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
 
         // then
         verify(matchCalculationService).calculateAndSave(bidA, company);
         verify(matchCalculationService).calculateAndSave(bidB, company);
-        verify(matchCalculationStatusRepository).save(status);
-        assertThat(status.getStatus()).isEqualTo(MatchCalculationStatusType.DONE);
+        verify(matchCalculationStatusRepository).finish(1L, TOKEN, MatchCalculationStatusType.DONE);
     }
 
     @Test
-    @DisplayName("한 공고의 매칭 계산이 실패해도 나머지 공고는 계속 처리되고 최종 상태는 DONE이다")
+    @DisplayName("한 공고의 매칭 계산이 실패해도 나머지 공고는 계속 처리되고 최종 상태는 DONE으로 기록된다")
     void 한_공고가_실패해도_나머지는_계속_처리되고_DONE으로_기록한다() {
         // given
         given(companyRepository.findById(1L)).willReturn(Optional.of(company));
         given(bidNoticeRepository.findAll()).willReturn(List.of(bidA, bidB));
         doThrow(new RuntimeException("계산 실패")).when(matchCalculationService).calculateAndSave(bidA, company);
-        MatchCalculationStatus status = MatchCalculationStatus.start(company);
-        given(matchCalculationStatusRepository.findByCompanyId(company.getId())).willReturn(Optional.of(status));
 
         // when
-        listener.handle(new CompanyProfileSavedEvent(1L));
+        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
 
         // then
         verify(matchCalculationService).calculateAndSave(bidB, company);
-        assertThat(status.getStatus()).isEqualTo(MatchCalculationStatusType.DONE);
+        verify(matchCalculationStatusRepository).finish(1L, TOKEN, MatchCalculationStatusType.DONE);
     }
 
     @Test
@@ -96,11 +112,11 @@ class CompanyProfileMatchEventListenerTest {
         given(companyRepository.findById(999L)).willReturn(Optional.empty());
 
         // when
-        listener.handle(new CompanyProfileSavedEvent(999L));
+        listener.handle(new CompanyProfileSavedEvent(999L, TOKEN));
 
         // then
         verify(matchCalculationService, times(0)).calculateAndSave(any(), any());
-        verify(matchCalculationStatusRepository, never()).findByCompanyId(any());
+        verify(matchCalculationStatusRepository, never()).finish(any(), any(), any());
     }
 
     @Test
@@ -109,13 +125,48 @@ class CompanyProfileMatchEventListenerTest {
         // given
         given(companyRepository.findById(1L)).willReturn(Optional.of(company));
         given(bidNoticeRepository.findAll()).willThrow(new RuntimeException("DB 오류"));
-        MatchCalculationStatus status = MatchCalculationStatus.start(company);
-        given(matchCalculationStatusRepository.findByCompanyId(company.getId())).willReturn(Optional.of(status));
 
         // when
-        listener.handle(new CompanyProfileSavedEvent(1L));
+        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
 
         // then
-        assertThat(status.getStatus()).isEqualTo(MatchCalculationStatusType.FAILED);
+        verify(matchCalculationStatusRepository).finish(1L, TOKEN, MatchCalculationStatusType.FAILED);
+    }
+
+    @Test
+    @DisplayName("스레드풀 포화로 작업 제출이 거부되면 계산은 시작조차 되지 않고 즉시 FAILED로 기록된다")
+    void 작업제출이_거부되면_즉시_FAILED로_기록한다() {
+        // given
+        doThrow(new TaskRejectedException("풀 포화")).when(matchTaskExecutor).execute(any());
+
+        // when
+        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
+
+        // then
+        verify(companyRepository, never()).findById(any());
+        verify(matchCalculationService, never()).calculateAndSave(any(), any());
+        verify(matchCalculationStatusRepository).finish(1L, TOKEN, MatchCalculationStatusType.FAILED);
+    }
+
+    @Test
+    @DisplayName("heartbeat 도중 다른 작업에 락을 넘겨준 것이 감지되면 루프를 중단하고 최종 상태를 기록하지 않는다")
+    void heartbeat가_실패하면_루프를_중단하고_상태를_기록하지않는다() {
+        // given: heartbeat 주기(20건)를 넘기도록 공고를 25건 준비한다.
+        List<BidNotice> bids = IntStream.range(0, 25)
+                .mapToObj(i -> BidNotice.create(new BidNoticeCreateCommand(
+                        "EXT-" + i, "G2B", "공고 " + i, null, null, null, null, null, null, null,
+                        null, null, null, null, null)))
+                .toList();
+        given(companyRepository.findById(1L)).willReturn(Optional.of(company));
+        given(bidNoticeRepository.findAll()).willReturn(bids);
+        given(matchCalculationStatusRepository.heartbeat(1L, TOKEN)).willReturn(0);
+
+        // when
+        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
+
+        // then: 20번째 공고까지만 처리되고 heartbeat 실패 직후 중단된다.
+        verify(matchCalculationService, times(20)).calculateAndSave(any(), eq(company));
+        verify(matchCalculationStatusRepository).heartbeat(1L, TOKEN);
+        verify(matchCalculationStatusRepository, never()).finish(any(), any(), any());
     }
 }

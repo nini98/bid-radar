@@ -31,7 +31,7 @@ class MatchCalculationStatusEntityMappingTest extends IntegrationTestBase {
         User user = entityManager.persistAndFlush(User.create("owner@bidradar.com", "hash", "홍길동"));
         Company company = entityManager.persistAndFlush(Company.create(user, "테스트 회사"));
 
-        MatchCalculationStatus status = entityManager.persistAndFlush(MatchCalculationStatus.start(company));
+        MatchCalculationStatus status = entityManager.persistAndFlush(MatchCalculationStatus.start(company, "token-1"));
 
         // when
         entityManager.clear();
@@ -40,6 +40,7 @@ class MatchCalculationStatusEntityMappingTest extends IntegrationTestBase {
         // then
         assertThat(found.getCompany().getId()).isEqualTo(company.getId());
         assertThat(found.getStatus()).isEqualTo(MatchCalculationStatusType.IN_PROGRESS);
+        assertThat(found.getLockToken()).isEqualTo("token-1");
     }
 
     @Test
@@ -48,10 +49,10 @@ class MatchCalculationStatusEntityMappingTest extends IntegrationTestBase {
         // given
         User user = entityManager.persistAndFlush(User.create("owner2@bidradar.com", "hash", "홍길동"));
         Company company = entityManager.persistAndFlush(Company.create(user, "테스트 회사2"));
-        entityManager.persistAndFlush(MatchCalculationStatus.start(company));
+        entityManager.persistAndFlush(MatchCalculationStatus.start(company, "token-1"));
 
         // when // then
-        assertThatThrownBy(() -> entityManager.persistAndFlush(MatchCalculationStatus.start(company)))
+        assertThatThrownBy(() -> entityManager.persistAndFlush(MatchCalculationStatus.start(company, "token-1")))
                 .isInstanceOf(PersistenceException.class);
     }
 }

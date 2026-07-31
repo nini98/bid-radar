@@ -241,7 +241,7 @@ class CompanyProfileControllerTest {
     @DisplayName("PUT /api/companies/me 요청 시 재계산이 이미 진행 중이면 409가 반환된다")
     void saveMyProfile_재계산진행중이면_409를_반환한다() throws Exception {
         // given
-        willThrow(new ApiException(ResultCode.CONFLICT))
+        willThrow(new ApiException(ResultCode.MATCH_CALCULATION_IN_PROGRESS))
                 .given(companyProfileService).saveProfile(eq(1L), any());
 
         // when // then

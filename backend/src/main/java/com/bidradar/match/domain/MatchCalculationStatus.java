@@ -34,10 +34,14 @@ public class MatchCalculationStatus extends BaseEntity {
     @Column(name = "status", nullable = false, length = 20)
     private MatchCalculationStatusType status;
 
-    public static MatchCalculationStatus start(Company company) {
+    @Column(name = "lock_token", nullable = false, length = 36)
+    private String lockToken;
+
+    public static MatchCalculationStatus start(Company company, String lockToken) {
         MatchCalculationStatus status = new MatchCalculationStatus();
         status.company = company;
         status.status = MatchCalculationStatusType.IN_PROGRESS;
+        status.lockToken = lockToken;
         return status;
     }
 
