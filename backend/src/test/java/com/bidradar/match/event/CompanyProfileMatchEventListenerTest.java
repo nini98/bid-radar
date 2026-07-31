@@ -8,8 +8,7 @@ import com.bidradar.company.domain.Company;
 import com.bidradar.company.event.CompanyProfileSavedEvent;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.match.domain.MatchCalculationStatusType;
-import com.bidradar.match.repository.MatchCalculationStatusRepository;
-import com.bidradar.match.service.MatchCalculationService;
+import com.bidradar.match.service.MatchCalculationStatusCoordinator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,15 +21,12 @@ import org.springframework.core.task.TaskRejectedException;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -43,9 +39,7 @@ class CompanyProfileMatchEventListenerTest {
     @Mock
     BidNoticeRepository bidNoticeRepository;
     @Mock
-    MatchCalculationService matchCalculationService;
-    @Mock
-    MatchCalculationStatusRepository matchCalculationStatusRepository;
+    MatchCalculationStatusCoordinator matchCalculationStatusCoordinator;
     @Mock
     TaskExecutor matchTaskExecutor;
 
@@ -79,14 +73,16 @@ class CompanyProfileMatchEventListenerTest {
         // given
         given(companyRepository.findById(1L)).willReturn(Optional.of(company));
         given(bidNoticeRepository.findAll()).willReturn(List.of(bidA, bidB));
+        given(matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bidA, company, TOKEN)).willReturn(true);
+        given(matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bidB, company, TOKEN)).willReturn(true);
 
         // when
         listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
 
         // then
-        verify(matchCalculationService).calculateAndSave(bidA, company);
-        verify(matchCalculationService).calculateAndSave(bidB, company);
-        verify(matchCalculationStatusRepository).finish(1L, TOKEN, MatchCalculationStatusType.DONE);
+        verify(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidA, company, TOKEN);
+        verify(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidB, company, TOKEN);
+        verify(matchCalculationStatusCoordinator).finish(1L, TOKEN, MatchCalculationStatusType.DONE);
     }
 
     @Test
@@ -95,19 +91,21 @@ class CompanyProfileMatchEventListenerTest {
         // given
         given(companyRepository.findById(1L)).willReturn(Optional.of(company));
         given(bidNoticeRepository.findAll()).willReturn(List.of(bidA, bidB));
-        doThrow(new RuntimeException("계산 실패")).when(matchCalculationService).calculateAndSave(bidA, company);
+        doThrow(new RuntimeException("계산 실패"))
+                .when(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidA, company, TOKEN);
+        given(matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bidB, company, TOKEN)).willReturn(true);
 
         // when
         listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
 
         // then
-        verify(matchCalculationService).calculateAndSave(bidB, company);
-        verify(matchCalculationStatusRepository).finish(1L, TOKEN, MatchCalculationStatusType.DONE);
+        verify(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidB, company, TOKEN);
+        verify(matchCalculationStatusCoordinator).finish(1L, TOKEN, MatchCalculationStatusType.DONE);
     }
 
     @Test
-    @DisplayName("대상 회사를 찾을 수 없으면 매칭 계산도, 상태 기록도 수행하지 않는다")
-    void 회사를_찾을수없으면_계산과_상태기록을_수행하지않는다() {
+    @DisplayName("대상 회사를 찾을 수 없으면 계산은 수행하지 않고 즉시 FAILED로 기록한다")
+    void 회사를_찾을수없으면_계산없이_FAILED로_기록한다() {
         // given
         given(companyRepository.findById(999L)).willReturn(Optional.empty());
 
@@ -115,8 +113,21 @@ class CompanyProfileMatchEventListenerTest {
         listener.handle(new CompanyProfileSavedEvent(999L, TOKEN));
 
         // then
-        verify(matchCalculationService, times(0)).calculateAndSave(any(), any());
-        verify(matchCalculationStatusRepository, never()).finish(any(), any(), any());
+        verify(matchCalculationStatusCoordinator, never()).calculateAndSaveIfOwner(any(), any(), any());
+        verify(matchCalculationStatusCoordinator).finish(999L, TOKEN, MatchCalculationStatusType.FAILED);
+    }
+
+    @Test
+    @DisplayName("회사 조회 중 예외가 발생해도(일시적 DB 오류 등) FAILED로 기록한다")
+    void 회사조회중_예외가_발생해도_FAILED로_기록한다() {
+        // given
+        given(companyRepository.findById(1L)).willThrow(new RuntimeException("DB 오류"));
+
+        // when
+        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
+
+        // then
+        verify(matchCalculationStatusCoordinator).finish(1L, TOKEN, MatchCalculationStatusType.FAILED);
     }
 
     @Test
@@ -130,7 +141,7 @@ class CompanyProfileMatchEventListenerTest {
         listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
 
         // then
-        verify(matchCalculationStatusRepository).finish(1L, TOKEN, MatchCalculationStatusType.FAILED);
+        verify(matchCalculationStatusCoordinator).finish(1L, TOKEN, MatchCalculationStatusType.FAILED);
     }
 
     @Test
@@ -144,29 +155,24 @@ class CompanyProfileMatchEventListenerTest {
 
         // then
         verify(companyRepository, never()).findById(any());
-        verify(matchCalculationService, never()).calculateAndSave(any(), any());
-        verify(matchCalculationStatusRepository).finish(1L, TOKEN, MatchCalculationStatusType.FAILED);
+        verify(matchCalculationStatusCoordinator, never()).calculateAndSaveIfOwner(any(), any(), any());
+        verify(matchCalculationStatusCoordinator).finish(1L, TOKEN, MatchCalculationStatusType.FAILED);
     }
 
     @Test
-    @DisplayName("heartbeat 도중 다른 작업에 락을 넘겨준 것이 감지되면 루프를 중단하고 최종 상태를 기록하지 않는다")
-    void heartbeat가_실패하면_루프를_중단하고_상태를_기록하지않는다() {
-        // given: heartbeat 주기(20건)를 넘기도록 공고를 25건 준비한다.
-        List<BidNotice> bids = IntStream.range(0, 25)
-                .mapToObj(i -> BidNotice.create(new BidNoticeCreateCommand(
-                        "EXT-" + i, "G2B", "공고 " + i, null, null, null, null, null, null, null,
-                        null, null, null, null, null)))
-                .toList();
+    @DisplayName("다른 작업에 락을 넘겨준 것이 감지되면 즉시 루프를 중단하고 최종 상태를 기록하지 않는다")
+    void 락을_넘겨준것이_감지되면_루프를_중단하고_상태를_기록하지않는다() {
+        // given
         given(companyRepository.findById(1L)).willReturn(Optional.of(company));
-        given(bidNoticeRepository.findAll()).willReturn(bids);
-        given(matchCalculationStatusRepository.heartbeat(1L, TOKEN)).willReturn(0);
+        given(bidNoticeRepository.findAll()).willReturn(List.of(bidA, bidB));
+        given(matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bidA, company, TOKEN)).willReturn(false);
 
         // when
         listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
 
-        // then: 20번째 공고까지만 처리되고 heartbeat 실패 직후 중단된다.
-        verify(matchCalculationService, times(20)).calculateAndSave(any(), eq(company));
-        verify(matchCalculationStatusRepository).heartbeat(1L, TOKEN);
-        verify(matchCalculationStatusRepository, never()).finish(any(), any(), any());
+        // then: bidA에서 이미 밀린 것이 확인됐으므로 bidB는 시도조차 하지 않고, 최종 상태도 기록하지 않는다
+        //       (이미 다른 작업이 소유권을 가져갔으니 그 작업이 마무리할 몫이다).
+        verify(matchCalculationStatusCoordinator, never()).calculateAndSaveIfOwner(bidB, company, TOKEN);
+        verify(matchCalculationStatusCoordinator, never()).finish(any(), any(), any());
     }
 }

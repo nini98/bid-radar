@@ -6,8 +6,7 @@ import com.bidradar.company.domain.Company;
 import com.bidradar.company.event.CompanyProfileSavedEvent;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.match.domain.MatchCalculationStatusType;
-import com.bidradar.match.repository.MatchCalculationStatusRepository;
-import com.bidradar.match.service.MatchCalculationService;
+import com.bidradar.match.service.MatchCalculationStatusCoordinator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.task.TaskExecutor;
@@ -23,12 +22,9 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CompanyProfileMatchEventListener {
 
-    private static final int HEARTBEAT_INTERVAL = 20;
-
     private final CompanyRepository companyRepository;
     private final BidNoticeRepository bidNoticeRepository;
-    private final MatchCalculationService matchCalculationService;
-    private final MatchCalculationStatusRepository matchCalculationStatusRepository;
+    private final MatchCalculationStatusCoordinator matchCalculationStatusCoordinator;
     private final TaskExecutor matchTaskExecutor;
 
     /**
@@ -41,54 +37,37 @@ public class CompanyProfileMatchEventListener {
             matchTaskExecutor.execute(() -> process(event));
         } catch (TaskRejectedException e) {
             log.error("재계산 작업 제출이 거부됨(스레드풀 포화): companyId={}", event.companyId(), e);
-            finish(event, MatchCalculationStatusType.FAILED);
+            matchCalculationStatusCoordinator.finish(event.companyId(), event.lockToken(), MatchCalculationStatusType.FAILED);
         }
     }
 
     private void process(CompanyProfileSavedEvent event) {
-        Company company = companyRepository.findById(event.companyId()).orElse(null);
-        if (company == null) {
-            log.warn("재계산 대상 회사를 찾을 수 없음: companyId={}", event.companyId());
-            return;
-        }
-
         try {
+            Company company = companyRepository.findById(event.companyId()).orElse(null);
+            if (company == null) {
+                log.warn("재계산 대상 회사를 찾을 수 없음: companyId={}", event.companyId());
+                matchCalculationStatusCoordinator.finish(event.companyId(), event.lockToken(), MatchCalculationStatusType.FAILED);
+                return;
+            }
+
             List<BidNotice> bids = bidNoticeRepository.findAll();
-            int processed = 0;
             for (BidNotice bid : bids) {
+                boolean stillOwner;
                 try {
-                    matchCalculationService.calculateAndSave(bid, company);
+                    stillOwner = matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bid, company, event.lockToken());
                 } catch (Exception e) {
                     log.error("재계산 실패: bidNoticeId={}, companyId={}", bid.getId(), company.getId(), e);
+                    continue;
                 }
-                processed++;
-                if (processed % HEARTBEAT_INTERVAL == 0 && !heartbeat(event)) {
+                if (!stillOwner) {
                     log.warn("다른 재계산 작업에 락을 넘겨줘 실행을 중단함: companyId={}", event.companyId());
                     return;
                 }
             }
-            finish(event, MatchCalculationStatusType.DONE);
+            matchCalculationStatusCoordinator.finish(event.companyId(), event.lockToken(), MatchCalculationStatusType.DONE);
         } catch (Exception e) {
-            log.error("회사 매칭 재계산 배치 실패: companyId={}", company.getId(), e);
-            finish(event, MatchCalculationStatusType.FAILED);
-        }
-    }
-
-    /**
-     * 이 작업이 여전히 유효한 락 소유자임을 알리는 생존 신고.
-     * 다른 작업이 이미 재선점해 lockToken이 바뀌었으면 false를 반환해 호출자가 실행을 중단하게 한다.
-     */
-    private boolean heartbeat(CompanyProfileSavedEvent event) {
-        return matchCalculationStatusRepository.heartbeat(event.companyId(), event.lockToken()) > 0;
-    }
-
-    /**
-     * 락 소유자가 여전히 자신일 때만 최종 상태를 반영한다. 이미 다른 작업에 밀렸으면 조용히 무시된다.
-     */
-    private void finish(CompanyProfileSavedEvent event, MatchCalculationStatusType status) {
-        int updated = matchCalculationStatusRepository.finish(event.companyId(), event.lockToken(), status);
-        if (updated == 0) {
-            log.warn("이미 다른 재계산 작업에 밀려 상태 반영을 건너뜀: companyId={}, status={}", event.companyId(), status);
+            log.error("회사 매칭 재계산 배치 실패: companyId={}", event.companyId(), e);
+            matchCalculationStatusCoordinator.finish(event.companyId(), event.lockToken(), MatchCalculationStatusType.FAILED);
         }
     }
 }
