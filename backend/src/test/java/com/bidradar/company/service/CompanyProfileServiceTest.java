@@ -22,14 +22,18 @@ import com.bidradar.company.repository.CompanyBidPreferenceRepository;
 import com.bidradar.company.repository.CompanyBusinessAreaRepository;
 import com.bidradar.company.repository.CompanyCertificateRepository;
 import com.bidradar.company.repository.CompanyProjectExperienceRepository;
+import com.bidradar.company.event.CompanyProfileSavedEvent;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.company.repository.CompanyTechTagRepository;
+import com.bidradar.match.domain.MatchCalculationStatus;
+import com.bidradar.match.repository.MatchCalculationStatusRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
@@ -63,6 +67,10 @@ class CompanyProfileServiceTest {
     BusinessAreaRepository businessAreaRepository;
     @Mock
     UserRepository userRepository;
+    @Mock
+    MatchCalculationStatusRepository matchCalculationStatusRepository;
+    @Mock
+    ApplicationEventPublisher eventPublisher;
 
     final CodeMapper codeMapper = new CodeMapperImpl();
     final CompanyProfileMapper companyProfileMapper = new CompanyProfileMapperImpl();
@@ -74,7 +82,8 @@ class CompanyProfileServiceTest {
         companyProfileService = new CompanyProfileService(
                 companyRepository, companyTechTagRepository, companyBusinessAreaRepository,
                 companyCertificateRepository, companyProjectExperienceRepository, companyBidPreferenceRepository,
-                techTagRepository, businessAreaRepository, userRepository, codeMapper, companyProfileMapper
+                techTagRepository, businessAreaRepository, userRepository, codeMapper, companyProfileMapper,
+                matchCalculationStatusRepository, eventPublisher
         );
     }
 
@@ -195,6 +204,7 @@ class CompanyProfileServiceTest {
         given(companyCertificateRepository.findByCompanyId(any())).willReturn(List.of());
         given(companyProjectExperienceRepository.findByCompanyId(any())).willReturn(List.of());
         given(companyBidPreferenceRepository.findByCompanyId(any())).willReturn(Optional.empty());
+        given(matchCalculationStatusRepository.findByCompanyId(any())).willReturn(Optional.empty());
 
         // when
         CompanyProfileResponse response = companyProfileService.saveProfile(1L, request);
@@ -204,6 +214,8 @@ class CompanyProfileServiceTest {
         verify(companyCertificateRepository).saveAll(anyList());
         verify(companyProjectExperienceRepository).saveAll(anyList());
         verify(companyBidPreferenceRepository).save(any(CompanyBidPreference.class));
+        verify(matchCalculationStatusRepository).save(any(MatchCalculationStatus.class));
+        verify(eventPublisher).publishEvent(any(CompanyProfileSavedEvent.class));
         assertThat(response.companyName()).isEqualTo("델타소프트");
     }
 
@@ -221,6 +233,7 @@ class CompanyProfileServiceTest {
         given(companyCertificateRepository.findByCompanyId(any())).willReturn(List.of());
         given(companyProjectExperienceRepository.findByCompanyId(any())).willReturn(List.of());
         given(companyBidPreferenceRepository.findByCompanyId(any())).willReturn(Optional.empty());
+        given(matchCalculationStatusRepository.findByCompanyId(any())).willReturn(Optional.empty());
 
         // when
         companyProfileService.saveProfile(1L, request);
@@ -233,5 +246,53 @@ class CompanyProfileServiceTest {
         verify(companyBidPreferenceRepository).deleteByCompanyId(any());
         verify(userRepository, never()).getReferenceById(any());
         assertThat(existing.getCompanyName()).isEqualTo("변경된회사");
+    }
+
+    @Test
+    @DisplayName("이미 계산이 진행 중이고 5분 이내면 CONFLICT 예외가 발생하고 저장이 진행되지 않는다")
+    void saveProfile_계산진행중이면_CONFLICT예외() {
+        // given
+        User user = User.create("owner@bidradar.com", "hash", "홍길동");
+        Company existing = Company.create(user, "기존회사");
+        MatchCalculationStatus status = MatchCalculationStatus.start(existing);
+        CompanyProfileRequest request = emptyRequest("변경된회사");
+        given(companyRepository.findByUserId(1L)).willReturn(Optional.of(existing));
+        given(companyRepository.save(existing)).willReturn(existing);
+        given(matchCalculationStatusRepository.findByCompanyId(any())).willReturn(Optional.of(status));
+        given(matchCalculationStatusRepository.acquireLock(any(), any())).willReturn(0);
+
+        // when // then
+        assertThatThrownBy(() -> companyProfileService.saveProfile(1L, request))
+                .isInstanceOf(ApiException.class)
+                .satisfies(e -> assertThat(((ApiException) e).getResultCode()).isEqualTo(ResultCode.CONFLICT));
+
+        verify(companyTechTagRepository, never()).deleteAllByCompanyId(any());
+        verify(eventPublisher, never()).publishEvent(any());
+    }
+
+    @Test
+    @DisplayName("계산 상태가 IN_PROGRESS가 아니거나 락이 만료됐으면 저장이 성공하고 이벤트가 발행된다")
+    void saveProfile_락이없거나만료면_저장성공하고_이벤트발행() {
+        // given
+        User user = User.create("owner@bidradar.com", "hash", "홍길동");
+        Company existing = Company.create(user, "기존회사");
+        MatchCalculationStatus status = MatchCalculationStatus.start(existing);
+        CompanyProfileRequest request = emptyRequest("변경된회사");
+        given(companyRepository.findByUserId(1L)).willReturn(Optional.of(existing));
+        given(companyRepository.save(existing)).willReturn(existing);
+        given(companyTechTagRepository.findByCompanyId(any())).willReturn(List.of());
+        given(companyBusinessAreaRepository.findByCompanyId(any())).willReturn(List.of());
+        given(companyCertificateRepository.findByCompanyId(any())).willReturn(List.of());
+        given(companyProjectExperienceRepository.findByCompanyId(any())).willReturn(List.of());
+        given(companyBidPreferenceRepository.findByCompanyId(any())).willReturn(Optional.empty());
+        given(matchCalculationStatusRepository.findByCompanyId(any())).willReturn(Optional.of(status));
+        given(matchCalculationStatusRepository.acquireLock(any(), any())).willReturn(1);
+
+        // when
+        companyProfileService.saveProfile(1L, request);
+
+        // then
+        verify(companyTechTagRepository).deleteAllByCompanyId(any());
+        verify(eventPublisher).publishEvent(any(CompanyProfileSavedEvent.class));
     }
 }

@@ -25,18 +25,26 @@ import com.bidradar.company.repository.CompanyBidPreferenceRepository;
 import com.bidradar.company.repository.CompanyBusinessAreaRepository;
 import com.bidradar.company.repository.CompanyCertificateRepository;
 import com.bidradar.company.repository.CompanyProjectExperienceRepository;
+import com.bidradar.company.event.CompanyProfileSavedEvent;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.company.repository.CompanyTechTagRepository;
+import com.bidradar.match.domain.MatchCalculationStatus;
+import com.bidradar.match.repository.MatchCalculationStatusRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 public class CompanyProfileService {
+
+    private static final long CALCULATION_LOCK_STALE_MINUTES = 5;
 
     private final CompanyRepository companyRepository;
     private final CompanyTechTagRepository companyTechTagRepository;
@@ -49,19 +57,14 @@ public class CompanyProfileService {
     private final UserRepository userRepository;
     private final CodeMapper codeMapper;
     private final CompanyProfileMapper companyProfileMapper;
+    private final MatchCalculationStatusRepository matchCalculationStatusRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional(readOnly = true)
     public CompanyProfileResponse getProfile(Long userId) {
         return companyRepository.findByUserId(userId)
                 .map(this::buildResponse)
                 .orElse(null);
-    }
-
-    @Transactional(readOnly = true)
-    public void validateProfileExists(Long userId) {
-        if (!companyRepository.existsByUserId(userId)) {
-            throw new ApiException(ResultCode.NOT_FOUND);
-        }
     }
 
     @Transactional
@@ -79,13 +82,31 @@ public class CompanyProfileService {
         );
         company = companyRepository.save(company);
 
+        acquireCalculationLock(company);
+
         replaceTechTags(company, techTags);
         replaceBusinessAreas(company, businessAreas);
         replaceCertificates(company, request.certificates());
         replaceProjectExperiences(company, request.projectExperiences());
         replaceBidPreference(company, request.bidPreference());
 
+        eventPublisher.publishEvent(new CompanyProfileSavedEvent(company.getId()));
+
         return buildResponse(company);
+    }
+
+    private void acquireCalculationLock(Company company) {
+        Optional<MatchCalculationStatus> existing = matchCalculationStatusRepository.findByCompanyId(company.getId());
+        if (existing.isEmpty()) {
+            matchCalculationStatusRepository.save(MatchCalculationStatus.start(company));
+            return;
+        }
+
+        LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(CALCULATION_LOCK_STALE_MINUTES);
+        int acquired = matchCalculationStatusRepository.acquireLock(existing.get().getId(), staleBefore);
+        if (acquired == 0) {
+            throw new ApiException(ResultCode.CONFLICT);
+        }
     }
 
     private List<TechTag> validateTechTags(List<Long> techTagIds) {

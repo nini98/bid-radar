@@ -5,7 +5,6 @@ import com.bidradar.common.response.ResultCode;
 import com.bidradar.company.dto.request.CompanyProfileRequest;
 import com.bidradar.company.dto.response.CompanyProfileResponse;
 import com.bidradar.company.service.CompanyProfileService;
-import com.bidradar.match.service.RecalculateService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,12 +24,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.willThrow;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.authentication;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -47,9 +43,6 @@ class CompanyProfileControllerTest {
 
     @MockitoBean
     CompanyProfileService companyProfileService;
-
-    @MockitoBean
-    RecalculateService recalculateService;
 
     private UsernamePasswordAuthenticationToken authOf(Long userId) {
         return new UsernamePasswordAuthenticationToken(userId, null, List.of(new SimpleGrantedAuthority("ROLE_USER")));
@@ -245,32 +238,19 @@ class CompanyProfileControllerTest {
     }
 
     @Test
-    @DisplayName("POST /api/companies/me/recalculate 요청 시 200을 반환하고 비동기 재계산을 트리거한다")
-    void recalculate_정상요청시_200을_반환한다() throws Exception {
-        // when // then
-        mockMvc.perform(post("/api/companies/me/recalculate")
-                        .with(authentication(authOf(1L)))
-                        .with(csrf()))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.header.resultCode").value("200"));
-
-        verify(recalculateService).recalculate(1L);
-    }
-
-    @Test
-    @DisplayName("POST /api/companies/me/recalculate 요청 시 회사 프로필이 없으면 404를 반환한다")
-    void recalculate_프로필없으면_404를_반환한다() throws Exception {
+    @DisplayName("PUT /api/companies/me 요청 시 재계산이 이미 진행 중이면 409가 반환된다")
+    void saveMyProfile_재계산진행중이면_409를_반환한다() throws Exception {
         // given
-        willThrow(new ApiException(ResultCode.NOT_FOUND))
-                .given(companyProfileService).validateProfileExists(1L);
+        willThrow(new ApiException(ResultCode.CONFLICT))
+                .given(companyProfileService).saveProfile(eq(1L), any());
 
         // when // then
-        mockMvc.perform(post("/api/companies/me/recalculate")
+        mockMvc.perform(put("/api/companies/me")
                         .with(authentication(authOf(1L)))
-                        .with(csrf()))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.header.resultCode").value("404"));
-
-        verify(recalculateService, never()).recalculate(any());
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRequest())))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.header.resultCode").value("409"));
     }
 }
