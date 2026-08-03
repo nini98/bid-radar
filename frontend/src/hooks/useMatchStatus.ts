@@ -1,36 +1,26 @@
-import { useEffect, useRef } from 'react';
+import { useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchMatchStatus, retryMatchStatus } from '../api/match';
-import { didTransitionToDone, matchStatusQueryKey } from '../lib/matchStatus';
-import type { MatchCalculationStatusType } from '../types/match';
+import { matchStatusQueryKey } from '../lib/matchStatus';
 import { useCompanyProfile } from './useCompanyProfile';
 import { useMe } from './useAuth';
 
 const POLL_INTERVAL_MS = 5000;
 
+// DONE 전이 감지와 그에 따른 bids 캐시 무효화는 이 훅이 아니라 MatchStatusWatcher(앱 루트에 딱
+// 한 번만 마운트)가 전담한다. 이 훅은 CompanyProfilePage처럼 화면마다 마운트/언마운트되는
+// 소비자도 있는데, 그런 곳에서 각자 전이를 추적하면 페이지를 다시 방문할 때마다 "최초 관찰"이
+// 반복되어 중복/과잉 무효화가 생긴다.
 export function useMatchStatus() {
   const { data: user } = useMe();
   const { data: profile } = useCompanyProfile();
-  const queryClient = useQueryClient();
-  const prevStatusRef = useRef<MatchCalculationStatusType | null | undefined>(undefined);
 
-  const query = useQuery({
+  return useQuery({
     queryKey: matchStatusQueryKey(user?.id),
     queryFn: fetchMatchStatus,
     enabled: !!user && !!profile,
     refetchInterval: (q) => (q.state.data?.status === 'IN_PROGRESS' ? POLL_INTERVAL_MS : false),
   });
-
-  useEffect(() => {
-    if (!query.data) return;
-    const nextStatus = query.data.status;
-    if (didTransitionToDone(prevStatusRef.current, nextStatus)) {
-      queryClient.invalidateQueries({ queryKey: ['bids'] });
-    }
-    prevStatusRef.current = nextStatus;
-  }, [query.data, queryClient]);
-
-  return query;
 }
 
 export function useRetryMatchStatus() {

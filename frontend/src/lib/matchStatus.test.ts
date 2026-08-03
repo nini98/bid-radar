@@ -51,8 +51,12 @@ describe('didTransitionToDone', () => {
     expect(didTransitionToDone('DONE', 'DONE')).toBe(false);
   });
 
-  it('최초 로드로 이전 상태가 없을 때(undefined) DONE이어도 false를 반환한다', () => {
-    expect(didTransitionToDone(undefined, 'DONE')).toBe(false);
+  it('관찰자의 최초 조회(undefined)에서 DONE이면 true를 반환한다 (부팅 시 조회 경쟁 대비)', () => {
+    expect(didTransitionToDone(undefined, 'DONE')).toBe(true);
+  });
+
+  it('이력 없음(null)에서 DONE으로 바뀌면 true를 반환한다', () => {
+    expect(didTransitionToDone(null, 'DONE')).toBe(true);
   });
 
   it('IN_PROGRESS에서 FAILED로 바뀌면 false를 반환한다', () => {

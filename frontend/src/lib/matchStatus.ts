@@ -40,5 +40,11 @@ export function didTransitionToDone(
   prevStatus: MatchCalculationStatusType | null | undefined,
   nextStatus: MatchCalculationStatusType | null
 ): boolean {
-  return nextStatus === 'DONE' && (prevStatus === 'IN_PROGRESS' || prevStatus === 'FAILED');
+  // prevStatus가 undefined(이 관찰자의 최초 조회)인 경우도 true로 취급한다. 앱이 막 부팅된
+  // 시점에 상태 조회와 bids 조회가 동시에 나가면, 재계산이 그 사이에 끝나 상태는 처음부터
+  // DONE으로 응답하지만 bids는 계산 완료 전 값을 받았을 수 있다 — 이 관찰자가 "처음 봤다"는
+  // 이유만으로 안전하게 넘기면 이 경쟁 상태에서 무효화가 누락된다. 호출자가 이 함수를 앱
+  // 전역에 하나만 존재하는 관찰자(MatchStatusWatcher)에서만 쓰는 한, "최초 관찰=DONE"은
+  // 화면 재방문마다 반복되지 않고 부팅 시 한 번만 발생하므로 과잉 무효화로 이어지지 않는다.
+  return nextStatus === 'DONE' && prevStatus !== 'DONE';
 }
