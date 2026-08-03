@@ -45,8 +45,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class CompanyProfileService {
 
-    private static final long CALCULATION_LOCK_STALE_MINUTES = 5;
-
     private final CompanyRepository companyRepository;
     private final CompanyTechTagRepository companyTechTagRepository;
     private final CompanyBusinessAreaRepository companyBusinessAreaRepository;
@@ -104,7 +102,7 @@ public class CompanyProfileService {
             return newToken;
         }
 
-        LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(CALCULATION_LOCK_STALE_MINUTES);
+        LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(MatchCalculationStatus.LOCK_STALE_MINUTES);
         int acquired = matchCalculationStatusRepository.acquireLock(existing.get().getId(), staleBefore, newToken);
         if (acquired == 0) {
             throw new ApiException(ResultCode.MATCH_CALCULATION_IN_PROGRESS);

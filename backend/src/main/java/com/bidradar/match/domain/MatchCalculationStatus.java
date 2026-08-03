@@ -25,6 +25,12 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class MatchCalculationStatus extends BaseEntity {
 
+    /**
+     * IN_PROGRESS 상태가 이 시간(분)을 넘도록 갱신되지 않으면 죽은 작업으로 간주해
+     * 새 시도(프로필 저장/재시도)가 락을 재선점할 수 있다.
+     */
+    public static final long LOCK_STALE_MINUTES = 5;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id", nullable = false,
             foreignKey = @ForeignKey(name = "fk_match_calculation_status_company"))

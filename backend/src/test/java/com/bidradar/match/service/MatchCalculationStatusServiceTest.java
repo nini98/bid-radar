@@ -90,49 +90,33 @@ class MatchCalculationStatusServiceTest {
     }
 
     @Test
-    @DisplayName("FAILED 상태면 재시도가 허용되고 락 갱신 후 재계산 이벤트가 발행된다")
-    void retry_FAILED상태면_락갱신후_이벤트가_발행된다() {
-        // given
+    @DisplayName("재시도 락 재획득에 성공하면(acquireRetryLock이 1을 반환) 재계산 이벤트가 발행된다")
+    void retry_락재획득에_성공하면_이벤트가_발행된다() {
+        // given: 상태 자체(FAILED/낡은 IN_PROGRESS)가 재시도 가능한지의 판정은 acquireRetryLock의 원자적 CAS
+        // 쿼리(MatchCalculationStatusRepositoryTest에서 검증)가 전담하므로, 서비스 단위 테스트에서는
+        // 그 결과(1/0)에 따라 서비스가 올바르게 분기하는지만 검증한다.
         given(companyRepository.findByUserId(1L)).willReturn(Optional.of(company));
         MatchCalculationStatus status = MatchCalculationStatus.start(company, "old-token");
         status.markFailed();
         given(matchCalculationStatusRepository.findByCompanyId(company.getId())).willReturn(Optional.of(status));
-        given(matchCalculationStatusRepository.acquireLock(any(), any(), any())).willReturn(1);
+        given(matchCalculationStatusRepository.acquireRetryLock(any(), any(), any())).willReturn(1);
 
         // when
         newService().retry(1L);
 
         // then
-        verify(matchCalculationStatusRepository).acquireLock(any(), any(), any());
+        verify(matchCalculationStatusRepository).acquireRetryLock(any(), any(), any());
         verify(eventPublisher).publishEvent(any(MatchRecalculationRequestedEvent.class));
     }
 
     @Test
-    @DisplayName("FAILED가 아닌 상태(IN_PROGRESS/DONE)면 재시도가 거부된다")
-    void retry_FAILED가_아니면_거부된다() {
+    @DisplayName("재시도 락 재획득에 실패하면(acquireRetryLock이 0을 반환) 전용 에러 코드로 거부되고 이벤트가 발행되지 않는다")
+    void retry_락재획득에_실패하면_거부된다() {
         // given
         given(companyRepository.findByUserId(1L)).willReturn(Optional.of(company));
         MatchCalculationStatus status = MatchCalculationStatus.start(company, "token");
         given(matchCalculationStatusRepository.findByCompanyId(company.getId())).willReturn(Optional.of(status));
-
-        // when // then
-        assertThatThrownBy(() -> newService().retry(1L))
-                .isInstanceOf(ApiException.class)
-                .extracting("resultCode")
-                .isEqualTo(ResultCode.MATCH_CALCULATION_RETRY_NOT_ALLOWED);
-        verify(matchCalculationStatusRepository, never()).acquireLock(any(), any(), any());
-        verify(eventPublisher, never()).publishEvent(any());
-    }
-
-    @Test
-    @DisplayName("FAILED 상태여도 락 재획득 시점에 이미 다른 작업이 선점했으면 재시도가 거부된다")
-    void retry_락재획득_경쟁에서_밀리면_거부된다() {
-        // given
-        given(companyRepository.findByUserId(1L)).willReturn(Optional.of(company));
-        MatchCalculationStatus status = MatchCalculationStatus.start(company, "old-token");
-        status.markFailed();
-        given(matchCalculationStatusRepository.findByCompanyId(company.getId())).willReturn(Optional.of(status));
-        given(matchCalculationStatusRepository.acquireLock(any(), any(), any())).willReturn(0);
+        given(matchCalculationStatusRepository.acquireRetryLock(any(), any(), any())).willReturn(0);
 
         // when // then
         assertThatThrownBy(() -> newService().retry(1L))

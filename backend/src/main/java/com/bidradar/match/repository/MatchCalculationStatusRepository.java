@@ -34,6 +34,26 @@ public interface MatchCalculationStatusRepository extends JpaRepository<MatchCal
     int acquireLock(@Param("id") Long id, @Param("staleBefore") LocalDateTime staleBefore, @Param("newToken") String newToken);
 
     /**
+     * 재시도 전용 CAS: FAILED이거나, IN_PROGRESS인데 죽은 것으로 간주되는 낡은 락(updatedAt이 staleBefore 이전)일 때만
+     * 락을 재선점한다. {@link #acquireLock}과 달리 DONE은 통과시키지 않는다 — "정상 완료된 결과를 재시도로
+     * 덮어쓸 수 없다"는 재시도 API 고유의 계약이라, 상태 확인과 락 획득을 이 쿼리 하나로 원자적으로 묶어
+     * 조회 시점과 갱신 시점 사이에 상태가 바뀌는 경쟁 상태(TOCTOU)를 없앤다.
+     */
+    @Transactional
+    @Modifying
+    @Query("""
+            UPDATE MatchCalculationStatus s
+            SET s.status = com.bidradar.match.domain.MatchCalculationStatusType.IN_PROGRESS,
+                s.updatedAt = CURRENT_TIMESTAMP,
+                s.lockToken = :newToken
+            WHERE s.id = :id
+              AND (s.status = com.bidradar.match.domain.MatchCalculationStatusType.FAILED
+                   OR (s.status = com.bidradar.match.domain.MatchCalculationStatusType.IN_PROGRESS
+                       AND s.updatedAt < :staleBefore))
+            """)
+    int acquireRetryLock(@Param("id") Long id, @Param("staleBefore") LocalDateTime staleBefore, @Param("newToken") String newToken);
+
+    /**
      * 진행 중인 재계산 작업이 자신이 여전히 유효한 락 소유자임을 알리는 생존 신고.
      * 다른 작업이 이미 락을 재선점해 lockToken이 바뀌었으면 0건 갱신되어 실패로 감지된다.
      */
