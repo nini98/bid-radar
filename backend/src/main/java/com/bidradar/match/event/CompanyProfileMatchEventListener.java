@@ -3,7 +3,6 @@ package com.bidradar.match.event;
 import com.bidradar.bid.domain.BidNotice;
 import com.bidradar.bid.repository.BidNoticeRepository;
 import com.bidradar.company.domain.Company;
-import com.bidradar.company.event.CompanyProfileSavedEvent;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.match.domain.MatchCalculationStatusType;
 import com.bidradar.match.service.MatchCalculationStatusCoordinator;
@@ -32,7 +31,7 @@ public class CompanyProfileMatchEventListener {
      * 우리 코드가 그 실패를 잡을 방법이 없다. 여기서는 직접 제출해 거부를 감지하고 즉시 FAILED로 기록한다.
      */
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
-    public void handle(CompanyProfileSavedEvent event) {
+    public void handle(MatchRecalculationRequestedEvent event) {
         try {
             matchTaskExecutor.execute(() -> process(event));
         } catch (TaskRejectedException e) {
@@ -41,7 +40,7 @@ public class CompanyProfileMatchEventListener {
         }
     }
 
-    private void process(CompanyProfileSavedEvent event) {
+    private void process(MatchRecalculationRequestedEvent event) {
         try {
             Company company = companyRepository.findById(event.companyId()).orElse(null);
             if (company == null) {

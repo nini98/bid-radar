@@ -25,10 +25,10 @@ import com.bidradar.company.repository.CompanyBidPreferenceRepository;
 import com.bidradar.company.repository.CompanyBusinessAreaRepository;
 import com.bidradar.company.repository.CompanyCertificateRepository;
 import com.bidradar.company.repository.CompanyProjectExperienceRepository;
-import com.bidradar.company.event.CompanyProfileSavedEvent;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.company.repository.CompanyTechTagRepository;
 import com.bidradar.match.domain.MatchCalculationStatus;
+import com.bidradar.match.event.MatchRecalculationRequestedEvent;
 import com.bidradar.match.repository.MatchCalculationStatusRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -44,8 +44,6 @@ import java.util.UUID;
 @Service
 @RequiredArgsConstructor
 public class CompanyProfileService {
-
-    private static final long CALCULATION_LOCK_STALE_MINUTES = 5;
 
     private final CompanyRepository companyRepository;
     private final CompanyTechTagRepository companyTechTagRepository;
@@ -91,7 +89,7 @@ public class CompanyProfileService {
         replaceProjectExperiences(company, request.projectExperiences());
         replaceBidPreference(company, request.bidPreference());
 
-        eventPublisher.publishEvent(new CompanyProfileSavedEvent(company.getId(), lockToken));
+        eventPublisher.publishEvent(new MatchRecalculationRequestedEvent(company.getId(), lockToken));
 
         return buildResponse(company);
     }
@@ -104,7 +102,7 @@ public class CompanyProfileService {
             return newToken;
         }
 
-        LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(CALCULATION_LOCK_STALE_MINUTES);
+        LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(MatchCalculationStatus.LOCK_STALE_MINUTES);
         int acquired = matchCalculationStatusRepository.acquireLock(existing.get().getId(), staleBefore, newToken);
         if (acquired == 0) {
             throw new ApiException(ResultCode.MATCH_CALCULATION_IN_PROGRESS);
