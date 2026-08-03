@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchMatchStatus, retryMatchStatus } from '../api/match';
-import { didTransitionToDone } from '../lib/matchStatus';
+import { didTransitionToDone, matchStatusQueryKey } from '../lib/matchStatus';
 import type { MatchCalculationStatusType } from '../types/match';
 import { useCompanyProfile } from './useCompanyProfile';
 import { useMe } from './useAuth';
@@ -15,7 +15,7 @@ export function useMatchStatus() {
   const prevStatusRef = useRef<MatchCalculationStatusType | null | undefined>(undefined);
 
   const query = useQuery({
-    queryKey: ['match-status', 'me', user?.id],
+    queryKey: matchStatusQueryKey(user?.id),
     queryFn: fetchMatchStatus,
     enabled: !!user && !!profile,
     refetchInterval: (q) => (q.state.data?.status === 'IN_PROGRESS' ? POLL_INTERVAL_MS : false),
@@ -40,7 +40,7 @@ export function useRetryMatchStatus() {
   return useMutation({
     mutationFn: retryMatchStatus,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['match-status', 'me', user?.id] });
+      queryClient.invalidateQueries({ queryKey: matchStatusQueryKey(user?.id) });
     },
   });
 }

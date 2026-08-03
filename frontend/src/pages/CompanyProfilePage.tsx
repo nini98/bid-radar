@@ -125,7 +125,12 @@ interface CompanyProfileFormProps {
 
 function CompanyProfileForm({ profile, techTags, businessAreas }: CompanyProfileFormProps) {
   const { mutate: save, isPending } = useSaveCompanyProfile();
-  const { data: matchStatus, isLoading: isMatchStatusLoading, isError: isMatchStatusError } = useMatchStatus();
+  const {
+    data: matchStatus,
+    isLoading: isMatchStatusLoading,
+    isError: isMatchStatusError,
+    refetch: refetchMatchStatus,
+  } = useMatchStatus();
   const { mutate: retry, isPending: isRetrying } = useRetryMatchStatus();
   const [form, setForm] = useState<FormState>(() => buildFormState(profile));
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -185,6 +190,7 @@ function CompanyProfileForm({ profile, techTags, businessAreas }: CompanyProfile
             isError={isMatchStatusError}
             isRetrying={isRetrying}
             onRetry={handleRetry}
+            onRefetch={() => refetchMatchStatus()}
           />
         )}
 

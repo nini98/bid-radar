@@ -2,6 +2,10 @@ import type { MatchCalculationStatus, MatchCalculationStatusType } from '../type
 
 export const MATCH_STATUS_LOCK_STALE_MINUTES = 5;
 
+export function matchStatusQueryKey(userId: number | undefined) {
+  return ['match-status', 'me', userId] as const;
+}
+
 export interface MatchStatusDisplay {
   enabled: boolean;
   message: string;
