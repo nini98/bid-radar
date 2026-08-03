@@ -5,7 +5,6 @@ import com.bidradar.bid.domain.BidNotice;
 import com.bidradar.bid.repository.BidNoticeRepository;
 import com.bidradar.bid.service.command.BidNoticeCreateCommand;
 import com.bidradar.company.domain.Company;
-import com.bidradar.company.event.CompanyProfileSavedEvent;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.match.domain.MatchCalculationStatusType;
 import com.bidradar.match.service.MatchCalculationStatusCoordinator;
@@ -77,7 +76,7 @@ class CompanyProfileMatchEventListenerTest {
         given(matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bidB, company, TOKEN)).willReturn(true);
 
         // when
-        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
+        listener.handle(new MatchRecalculationRequestedEvent(1L, TOKEN));
 
         // then
         verify(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidA, company, TOKEN);
@@ -96,7 +95,7 @@ class CompanyProfileMatchEventListenerTest {
         given(matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bidB, company, TOKEN)).willReturn(true);
 
         // when
-        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
+        listener.handle(new MatchRecalculationRequestedEvent(1L, TOKEN));
 
         // then
         verify(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidB, company, TOKEN);
@@ -110,7 +109,7 @@ class CompanyProfileMatchEventListenerTest {
         given(companyRepository.findById(999L)).willReturn(Optional.empty());
 
         // when
-        listener.handle(new CompanyProfileSavedEvent(999L, TOKEN));
+        listener.handle(new MatchRecalculationRequestedEvent(999L, TOKEN));
 
         // then
         verify(matchCalculationStatusCoordinator, never()).calculateAndSaveIfOwner(any(), any(), any());
@@ -124,7 +123,7 @@ class CompanyProfileMatchEventListenerTest {
         given(companyRepository.findById(1L)).willThrow(new RuntimeException("DB 오류"));
 
         // when
-        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
+        listener.handle(new MatchRecalculationRequestedEvent(1L, TOKEN));
 
         // then
         verify(matchCalculationStatusCoordinator).finish(1L, TOKEN, MatchCalculationStatusType.FAILED);
@@ -138,7 +137,7 @@ class CompanyProfileMatchEventListenerTest {
         given(bidNoticeRepository.findAll()).willThrow(new RuntimeException("DB 오류"));
 
         // when
-        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
+        listener.handle(new MatchRecalculationRequestedEvent(1L, TOKEN));
 
         // then
         verify(matchCalculationStatusCoordinator).finish(1L, TOKEN, MatchCalculationStatusType.FAILED);
@@ -151,7 +150,7 @@ class CompanyProfileMatchEventListenerTest {
         doThrow(new TaskRejectedException("풀 포화")).when(matchTaskExecutor).execute(any());
 
         // when
-        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
+        listener.handle(new MatchRecalculationRequestedEvent(1L, TOKEN));
 
         // then
         verify(companyRepository, never()).findById(any());
@@ -168,7 +167,7 @@ class CompanyProfileMatchEventListenerTest {
         given(matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bidA, company, TOKEN)).willReturn(false);
 
         // when
-        listener.handle(new CompanyProfileSavedEvent(1L, TOKEN));
+        listener.handle(new MatchRecalculationRequestedEvent(1L, TOKEN));
 
         // then: bidA에서 이미 밀린 것이 확인됐으므로 bidB는 시도조차 하지 않고, 최종 상태도 기록하지 않는다
         //       (이미 다른 작업이 소유권을 가져갔으니 그 작업이 마무리할 몫이다).

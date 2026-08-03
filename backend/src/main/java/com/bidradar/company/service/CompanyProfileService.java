@@ -25,10 +25,10 @@ import com.bidradar.company.repository.CompanyBidPreferenceRepository;
 import com.bidradar.company.repository.CompanyBusinessAreaRepository;
 import com.bidradar.company.repository.CompanyCertificateRepository;
 import com.bidradar.company.repository.CompanyProjectExperienceRepository;
-import com.bidradar.company.event.CompanyProfileSavedEvent;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.company.repository.CompanyTechTagRepository;
 import com.bidradar.match.domain.MatchCalculationStatus;
+import com.bidradar.match.event.MatchRecalculationRequestedEvent;
 import com.bidradar.match.repository.MatchCalculationStatusRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -91,7 +91,7 @@ public class CompanyProfileService {
         replaceProjectExperiences(company, request.projectExperiences());
         replaceBidPreference(company, request.bidPreference());
 
-        eventPublisher.publishEvent(new CompanyProfileSavedEvent(company.getId(), lockToken));
+        eventPublisher.publishEvent(new MatchRecalculationRequestedEvent(company.getId(), lockToken));
 
         return buildResponse(company);
     }

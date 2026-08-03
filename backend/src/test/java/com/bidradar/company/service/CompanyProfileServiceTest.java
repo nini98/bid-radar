@@ -22,10 +22,10 @@ import com.bidradar.company.repository.CompanyBidPreferenceRepository;
 import com.bidradar.company.repository.CompanyBusinessAreaRepository;
 import com.bidradar.company.repository.CompanyCertificateRepository;
 import com.bidradar.company.repository.CompanyProjectExperienceRepository;
-import com.bidradar.company.event.CompanyProfileSavedEvent;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.company.repository.CompanyTechTagRepository;
 import com.bidradar.match.domain.MatchCalculationStatus;
+import com.bidradar.match.event.MatchRecalculationRequestedEvent;
 import com.bidradar.match.repository.MatchCalculationStatusRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -215,7 +215,7 @@ class CompanyProfileServiceTest {
         verify(companyProjectExperienceRepository).saveAll(anyList());
         verify(companyBidPreferenceRepository).save(any(CompanyBidPreference.class));
         verify(matchCalculationStatusRepository).save(any(MatchCalculationStatus.class));
-        verify(eventPublisher).publishEvent(any(CompanyProfileSavedEvent.class));
+        verify(eventPublisher).publishEvent(any(MatchRecalculationRequestedEvent.class));
         assertThat(response.companyName()).isEqualTo("델타소프트");
     }
 
@@ -293,6 +293,6 @@ class CompanyProfileServiceTest {
 
         // then
         verify(companyTechTagRepository).deleteAllByCompanyId(any());
-        verify(eventPublisher).publishEvent(any(CompanyProfileSavedEvent.class));
+        verify(eventPublisher).publishEvent(any(MatchRecalculationRequestedEvent.class));
     }
 }

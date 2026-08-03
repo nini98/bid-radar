@@ -8,7 +8,6 @@ import com.bidradar.bid.service.command.BidNoticeCreateCommand;
 import com.bidradar.company.domain.Company;
 import com.bidradar.company.dto.request.CompanyProfileRequest;
 import com.bidradar.company.dto.response.CompanyProfileResponse;
-import com.bidradar.company.event.CompanyProfileSavedEvent;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.company.service.CompanyProfileService;
 import com.bidradar.match.domain.MatchCalculationStatus;
@@ -177,7 +176,7 @@ class CompanyProfileMatchEventListenerIntegrationTest extends IntegrationTestBas
         // when: 이벤트만 발행하고 트랜잭션은 롤백한다.
         TransactionTemplate rollingBackTx = new TransactionTemplate(transactionManager);
         rollingBackTx.execute(status -> {
-            eventPublisher.publishEvent(new CompanyProfileSavedEvent(companyId, "rollback-token"));
+            eventPublisher.publishEvent(new MatchRecalculationRequestedEvent(companyId, "rollback-token"));
             status.setRollbackOnly();
             return null;
         });
