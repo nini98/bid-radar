@@ -28,7 +28,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
@@ -201,7 +201,7 @@ class CompanyProfileMatchEventListenerIntegrationTest extends IntegrationTestBas
         matchCalculationStatusRepository.save(MatchCalculationStatus.start(company, "old-token"));
         jdbcTemplate.update(
                 "UPDATE match_calculation_status SET updated_at = ? WHERE company_id = ?",
-                LocalDateTime.ofInstant(Instant.now().minus(Duration.ofMinutes(6)), ZoneOffset.UTC), company.getId());
+                OffsetDateTime.ofInstant(Instant.now().minus(Duration.ofMinutes(6)), ZoneOffset.UTC), company.getId());
 
         // when: 새로 프로필을 저장하면 낡은 락을 재선점해 새 토큰으로 진행한다 (calculateAndSave는 즉시 반환되도록 둠).
         CompanyProfileResponse response = companyProfileService.saveProfile(user.getId(), emptyRequest("낡은락테스트회사"));
