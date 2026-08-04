@@ -52,4 +52,38 @@ describe('useLogout', () => {
     });
     await waitFor(() => expect(probe.result.current.data).toEqual(userB));
   });
+
+  // 로그아웃 클릭 이전에 이미 시작되어 아직 응답하지 않은 /auth/me 요청(예: 창 포커스 재조회)이
+  // 있는 상황을 흉내낸다. cancelQueries 없이 setQueryData만 쓰면, 이 늦은 응답이 로그아웃으로
+  // 비운 캐시를 다시 덮어쓴다.
+  it('로그아웃 시점에 이미 진행 중이던 /auth/me 요청이 늦게 도착해도 캐시를 덮어쓰지 않는다', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = createWrapper(queryClient);
+
+    const probe = renderHook(() => useMe(), { wrapper });
+    await waitFor(() => expect(probe.result.current.data).toEqual(userA));
+
+    let resolveStaleFetch!: (user: AuthUser) => void;
+    vi.mocked(authApi.fetchMe).mockImplementation(
+      () => new Promise((resolve) => { resolveStaleFetch = resolve; })
+    );
+    act(() => {
+      queryClient.refetchQueries({ queryKey: ['auth', 'me'] });
+    });
+
+    const logoutHook = renderHook(() => useLogout(), { wrapper });
+    await act(async () => {
+      await logoutHook.result.current.mutateAsync();
+    });
+    await waitFor(() => expect(probe.result.current.data).toBeNull());
+
+    await act(async () => {
+      resolveStaleFetch(userA);
+      // 관찰자 알림은 notifyManager가 setTimeout(0)으로 스케줄링하므로, 마이크로태스크만
+      // 기다리면 아직 반영 전 상태를 보고 통과해버릴 수 있다. 실제 매크로태스크 tick을
+      // 기다려야 한다.
+      await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    expect(probe.result.current.data).toBeNull();
+  });
 });
