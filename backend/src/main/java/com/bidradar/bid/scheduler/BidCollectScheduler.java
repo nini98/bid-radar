@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
+import java.time.Clock;
 import java.time.LocalDate;
 
 @Slf4j
@@ -14,10 +15,11 @@ import java.time.LocalDate;
 public class BidCollectScheduler {
 
     private final BidCollectorService bidCollectorService;
+    private final Clock clock;
 
-    @Scheduled(cron = "${app.g2b.cron}")
+    @Scheduled(cron = "${app.g2b.cron}", zone = "Asia/Seoul")
     public void collect() {
-        LocalDate today = LocalDate.now();
+        LocalDate today = LocalDate.now(clock);
         log.info("G2B 공고 수집 시작: date={}", today);
         try {
             bidCollectorService.collect(today);

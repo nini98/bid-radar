@@ -1,6 +1,7 @@
 package com.bidradar.match.domain;
 
 import com.bidradar.auth.domain.User;
+import com.bidradar.common.config.ClockConfig;
 import com.bidradar.company.domain.Company;
 import com.bidradar.config.JpaConfig;
 import com.bidradar.support.IntegrationTestBase;
@@ -18,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(JpaConfig.class)
+@Import({JpaConfig.class, ClockConfig.class})
 class MatchCalculationStatusEntityMappingTest extends IntegrationTestBase {
 
     @Autowired

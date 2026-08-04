@@ -16,6 +16,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.util.StringUtils;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +25,7 @@ import java.util.List;
 public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
 
     private final JPAQueryFactory queryFactory;
+    private final Clock clock;
     private static final QBidNotice bid = QBidNotice.bidNotice;
     private static final QBidMatchResult matchResult = QBidMatchResult.bidMatchResult;
 
@@ -68,7 +70,7 @@ public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
 
     @Override
     public long countTodayNew() {
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        LocalDateTime todayStart = LocalDate.now(clock).atStartOfDay();
         Long count = queryFactory
                 .select(bid.count())
                 .from(bid)
@@ -79,7 +81,7 @@ public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
 
     @Override
     public long countTodayDeadline() {
-        LocalDateTime todayStart = LocalDate.now().atStartOfDay();
+        LocalDateTime todayStart = LocalDate.now(clock).atStartOfDay();
         LocalDateTime todayEnd = todayStart.plusDays(1);
         Long count = queryFactory
                 .select(bid.count())
@@ -111,7 +113,7 @@ public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
             builder.and(bid.budget.loe(condition.budgetMax()));
         }
         if (condition.deadlineDays() != null) {
-            LocalDateTime deadline = LocalDateTime.now().plusDays(condition.deadlineDays());
+            LocalDateTime deadline = LocalDateTime.now(clock).plusDays(condition.deadlineDays());
             builder.and(bid.bidDeadline.loe(deadline));
         }
         if (condition.grade() != null) {

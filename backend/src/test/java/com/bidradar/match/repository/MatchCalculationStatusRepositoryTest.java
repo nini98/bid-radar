@@ -1,6 +1,7 @@
 package com.bidradar.match.repository;
 
 import com.bidradar.auth.domain.User;
+import com.bidradar.common.config.ClockConfig;
 import com.bidradar.company.domain.Company;
 import com.bidradar.config.JpaConfig;
 import com.bidradar.match.domain.MatchCalculationStatus;
@@ -21,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(JpaConfig.class)
+@Import({JpaConfig.class, ClockConfig.class})
 class MatchCalculationStatusRepositoryTest extends IntegrationTestBase {
 
     @Autowired
