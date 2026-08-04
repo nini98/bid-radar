@@ -14,7 +14,8 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager;
 import org.springframework.context.annotation.Import;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -45,7 +46,7 @@ class MatchCalculationStatusRepositoryTest extends IntegrationTestBase {
         entityManager.clear();
 
         // when
-        int updated = matchCalculationStatusRepository.acquireLock(status.getId(), LocalDateTime.now().minusMinutes(5), "new-token");
+        int updated = matchCalculationStatusRepository.acquireLock(status.getId(), Instant.now().minus(Duration.ofMinutes(5)), "new-token");
 
         // then
         assertThat(updated).isEqualTo(1);
@@ -63,7 +64,7 @@ class MatchCalculationStatusRepositoryTest extends IntegrationTestBase {
         entityManager.clear();
 
         // when
-        int updated = matchCalculationStatusRepository.acquireLock(status.getId(), LocalDateTime.now().minusMinutes(5), "new-token");
+        int updated = matchCalculationStatusRepository.acquireLock(status.getId(), Instant.now().minus(Duration.ofMinutes(5)), "new-token");
 
         // then
         assertThat(updated).isEqualTo(0);
@@ -81,7 +82,7 @@ class MatchCalculationStatusRepositoryTest extends IntegrationTestBase {
 
         // when
         // staleBefore를 현재 시각 이후로 두어, 방금 만든 updatedAt도 "그 이전"으로 취급되게 한다 (죽은 락 시나리오 재현).
-        int updated = matchCalculationStatusRepository.acquireLock(status.getId(), LocalDateTime.now().plusMinutes(1), "new-token");
+        int updated = matchCalculationStatusRepository.acquireLock(status.getId(), Instant.now().plus(Duration.ofMinutes(1)), "new-token");
 
         // then
         assertThat(updated).isEqualTo(1);
@@ -98,7 +99,7 @@ class MatchCalculationStatusRepositoryTest extends IntegrationTestBase {
         entityManager.clear();
 
         // when
-        int updated = matchCalculationStatusRepository.acquireRetryLock(status.getId(), LocalDateTime.now().minusMinutes(5), "new-token");
+        int updated = matchCalculationStatusRepository.acquireRetryLock(status.getId(), Instant.now().minus(Duration.ofMinutes(5)), "new-token");
 
         // then
         assertThat(updated).isEqualTo(1);
@@ -118,7 +119,7 @@ class MatchCalculationStatusRepositoryTest extends IntegrationTestBase {
         entityManager.clear();
 
         // when
-        int updated = matchCalculationStatusRepository.acquireRetryLock(status.getId(), LocalDateTime.now().minusMinutes(5), "new-token");
+        int updated = matchCalculationStatusRepository.acquireRetryLock(status.getId(), Instant.now().minus(Duration.ofMinutes(5)), "new-token");
 
         // then
         assertThat(updated).isEqualTo(0);
@@ -135,7 +136,7 @@ class MatchCalculationStatusRepositoryTest extends IntegrationTestBase {
         entityManager.clear();
 
         // when
-        int updated = matchCalculationStatusRepository.acquireRetryLock(status.getId(), LocalDateTime.now().minusMinutes(5), "new-token");
+        int updated = matchCalculationStatusRepository.acquireRetryLock(status.getId(), Instant.now().minus(Duration.ofMinutes(5)), "new-token");
 
         // then
         assertThat(updated).isEqualTo(0);
@@ -151,7 +152,7 @@ class MatchCalculationStatusRepositoryTest extends IntegrationTestBase {
 
         // when
         // staleBefore를 현재 시각 이후로 두어, 방금 만든 updatedAt도 "그 이전"으로 취급되게 한다 (죽은 락 시나리오 재현).
-        int updated = matchCalculationStatusRepository.acquireRetryLock(status.getId(), LocalDateTime.now().plusMinutes(1), "new-token");
+        int updated = matchCalculationStatusRepository.acquireRetryLock(status.getId(), Instant.now().plus(Duration.ofMinutes(1)), "new-token");
 
         // then
         assertThat(updated).isEqualTo(1);
@@ -217,7 +218,7 @@ class MatchCalculationStatusRepositoryTest extends IntegrationTestBase {
         Long companyId = company.getId();
         MatchCalculationStatus status = entityManager.persistAndFlush(MatchCalculationStatus.start(company, "old-token"));
         entityManager.clear();
-        matchCalculationStatusRepository.acquireLock(status.getId(), LocalDateTime.now().plusMinutes(1), "new-token");
+        matchCalculationStatusRepository.acquireLock(status.getId(), Instant.now().plus(Duration.ofMinutes(1)), "new-token");
 
         // when: 밀려난 옛 작업(old-token)이 뒤늦게 완료 처리를 시도
         int updated = matchCalculationStatusRepository.finish(companyId, "old-token", MatchCalculationStatusType.FAILED);

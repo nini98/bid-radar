@@ -2,7 +2,7 @@ package com.bidradar.company.dto.response;
 
 import com.bidradar.code.dto.response.CodeResponse;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 public record CompanyProfileResponse(
@@ -24,7 +24,7 @@ public record CompanyProfileResponse(
         String managerName,
         String managerEmail,
         String managerPhone,
-        LocalDateTime updatedAt
+        Instant updatedAt
 ) {
 
     public record ProjectExperienceResponse(

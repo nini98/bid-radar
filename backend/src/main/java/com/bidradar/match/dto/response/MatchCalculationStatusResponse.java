@@ -2,7 +2,7 @@ package com.bidradar.match.dto.response;
 
 import com.bidradar.match.domain.MatchCalculationStatusType;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
-public record MatchCalculationStatusResponse(MatchCalculationStatusType status, LocalDateTime updatedAt) {
+public record MatchCalculationStatusResponse(MatchCalculationStatusType status, Instant updatedAt) {
 }

@@ -35,7 +35,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -102,7 +103,7 @@ public class CompanyProfileService {
             return newToken;
         }
 
-        LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(MatchCalculationStatus.LOCK_STALE_MINUTES);
+        Instant staleBefore = Instant.now().minus(Duration.ofMinutes(MatchCalculationStatus.LOCK_STALE_MINUTES));
         int acquired = matchCalculationStatusRepository.acquireLock(existing.get().getId(), staleBefore, newToken);
         if (acquired == 0) {
             throw new ApiException(ResultCode.MATCH_CALCULATION_IN_PROGRESS);

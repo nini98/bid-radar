@@ -36,6 +36,25 @@ describe('getMatchStatusDisplay', () => {
     const result = getMatchStatusDisplay({ status: null, updatedAt: null }, NOW);
     expect(result).toEqual({ enabled: false, message: '아직 계산되지 않았습니다.' });
   });
+
+  // 백엔드가 감사 타임스탬프를 오프셋 포함(UTC, `Z`) 문자열로 응답하도록 바뀐 뒤에도
+  // 동일한 판정 로직이 그대로 성립하는지 확인한다 (Issue #47).
+  describe('updatedAt이 오프셋 포함(UTC) 문자열이어도 동일하게 동작한다', () => {
+    const NOW_UTC = new Date('2026-08-03T12:00:00Z');
+
+    it('IN_PROGRESS이고 5분 이내면 비활성화된다', () => {
+      const result = getMatchStatusDisplay({ status: 'IN_PROGRESS', updatedAt: '2026-08-03T11:56:00Z' }, NOW_UTC);
+      expect(result).toEqual({ enabled: false, message: '재계산 중입니다.' });
+    });
+
+    it('IN_PROGRESS이고 5분을 초과하면 활성화된다', () => {
+      const result = getMatchStatusDisplay({ status: 'IN_PROGRESS', updatedAt: '2026-08-03T11:54:59Z' }, NOW_UTC);
+      expect(result).toEqual({
+        enabled: true,
+        message: '재계산이 예상보다 오래 걸리고 있습니다. 재계산을 다시 시작해 주세요.',
+      });
+    });
+  });
 });
 
 describe('didTransitionToDone', () => {

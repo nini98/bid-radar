@@ -9,5 +9,6 @@ RUN chmod +x gradlew && ./gradlew bootJar -x test
 
 FROM eclipse-temurin:21-jre-alpine
 WORKDIR /app
+ENV TZ=UTC
 COPY --from=build /app/build/libs/*.jar app.jar
 ENTRYPOINT ["java", "-Xmx400m", "-Xms128m", "-jar", "app.jar"]
