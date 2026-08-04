@@ -1,12 +1,14 @@
 import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCompanyProfile, useSaveCompanyProfile } from '../hooks/useCompanyProfile';
+import { useMatchStatus, useRetryMatchStatus } from '../hooks/useMatchStatus';
 import { useCodes } from '../hooks/useCodes';
 import TechTagSelect from '../components/company/TechTagSelect';
 import BusinessAreaSelect from '../components/company/BusinessAreaSelect';
 import CertificateList from '../components/company/CertificateList';
 import ProjectExperienceList from '../components/company/ProjectExperienceList';
 import BidPreferenceForm from '../components/company/BidPreferenceForm';
+import MatchStatusButton from '../components/company/MatchStatusButton';
 import Toast from '../components/common/Toast';
 import { REGIONS } from '../constants/region';
 import type { CodeItem } from '../types/code';
@@ -123,8 +125,23 @@ interface CompanyProfileFormProps {
 
 function CompanyProfileForm({ profile, techTags, businessAreas }: CompanyProfileFormProps) {
   const { mutate: save, isPending } = useSaveCompanyProfile();
+  const {
+    data: matchStatus,
+    isLoading: isMatchStatusLoading,
+    isError: isMatchStatusError,
+    refetch: refetchMatchStatus,
+  } = useMatchStatus();
+  const { mutate: retry, isPending: isRetrying } = useRetryMatchStatus();
   const [form, setForm] = useState<FormState>(() => buildFormState(profile));
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const handleRetry = () => {
+    retry(undefined, {
+      onError: (err) => {
+        setToast({ message: err instanceof Error ? err.message : '재계산 요청에 실패했습니다.', type: 'error' });
+      },
+    });
+  };
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -154,13 +171,8 @@ function CompanyProfileForm({ profile, techTags, businessAreas }: CompanyProfile
     };
 
     save(request, {
-      onSuccess: ({ recalculated }) => {
-        setToast({
-          message: recalculated
-            ? '저장되었습니다. 적합도 재계산을 요청했습니다.'
-            : '저장은 완료되었지만 재계산 요청에 실패했습니다.',
-          type: recalculated ? 'success' : 'error',
-        });
+      onSuccess: () => {
+        setToast({ message: '저장되었습니다.', type: 'success' });
       },
       onError: (err) => {
         setToast({ message: err instanceof Error ? err.message : '저장에 실패했습니다.', type: 'error' });
@@ -171,6 +183,17 @@ function CompanyProfileForm({ profile, techTags, businessAreas }: CompanyProfile
   return (
     <>
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto px-4 py-6 space-y-6">
+        {profile && (
+          <MatchStatusButton
+            status={matchStatus}
+            isLoading={isMatchStatusLoading}
+            isError={isMatchStatusError}
+            isRetrying={isRetrying}
+            onRetry={handleRetry}
+            onRefetch={() => refetchMatchStatus()}
+          />
+        )}
+
         <section className="bg-white border border-gray-100 rounded-lg p-4 space-y-3">
           <h2 className="text-sm font-semibold text-gray-900">기본 정보</h2>
           <div className="grid grid-cols-2 gap-3">

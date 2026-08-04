@@ -8,7 +8,3 @@ export async function fetchCompanyProfile(): Promise<CompanyProfile | null> {
 export async function saveCompanyProfile(request: CompanyProfileRequest): Promise<CompanyProfile> {
   return api.put('/companies/me', request);
 }
-
-export async function recalculateMatch(): Promise<void> {
-  return api.post('/companies/me/recalculate');
-}

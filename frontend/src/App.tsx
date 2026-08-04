@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import PrivateRoute from './components/common/PrivateRoute';
+import MatchStatusWatcher from './components/common/MatchStatusWatcher';
 import BidListPage from './pages/BidListPage';
 import BidDetailPage from './pages/BidDetailPage';
 import CompanyProfilePage from './pages/CompanyProfilePage';
@@ -9,6 +10,7 @@ import SignupPage from './pages/SignupPage';
 export default function App() {
   return (
     <BrowserRouter>
+      <MatchStatusWatcher />
       <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignupPage />} />
