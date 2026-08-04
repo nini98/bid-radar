@@ -79,11 +79,49 @@ describe('useLogout', () => {
 
     await act(async () => {
       resolveStaleFetch(userA);
-      // 관찰자 알림은 notifyManager가 setTimeout(0)으로 스케줄링하므로, 마이크로태스크만
+      // 관찰자 알림은 notifyManager가 setTimeout으로 스케줄링하므로, 마이크로태스크만
       // 기다리면 아직 반영 전 상태를 보고 통과해버릴 수 있다. 실제 매크로태스크 tick을
       // 기다려야 한다.
-      await new Promise((resolve) => setTimeout(resolve, 0));
+      await new Promise((resolve) => setTimeout(resolve, 20));
     });
     expect(probe.result.current.data).toBeNull();
+  });
+
+  // 로그아웃 후 /login 화면에 머무는 동안에도 MatchStatusWatcher가 auth.me를 계속 observe하므로
+  // 이 쿼리는 여전히 "활성" 상태다. 그 상태에서 창 포커스 등으로 시작된 /auth/me 재조회가 아직
+  // 응답하지 않았는데 로그인에 성공하면, cancelQueries 없이는 그 늦은 401 실패가 방금 저장한
+  // 새 사용자를 다시 isError로 덮어쓴다.
+  it('로그인 시점에 이미 진행 중이던 /auth/me 요청이 늦게 실패해도 새 사용자를 덮어쓰지 않는다', async () => {
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const wrapper = createWrapper(queryClient);
+
+    const probe = renderHook(() => useMe(), { wrapper });
+    await waitFor(() => expect(probe.result.current.data).toEqual(userA));
+    expect(probe.result.current.isError).toBe(false);
+
+    act(() => {
+      queryClient.setQueryData(['auth', 'me'], null);
+    });
+
+    let rejectStaleFetch!: (error: Error) => void;
+    vi.mocked(authApi.fetchMe).mockImplementation(
+      () => new Promise((_resolve, reject) => { rejectStaleFetch = reject; })
+    );
+    act(() => {
+      queryClient.refetchQueries({ queryKey: ['auth', 'me'] });
+    });
+
+    const loginHook = renderHook(() => useLogin(), { wrapper });
+    await act(async () => {
+      await loginHook.result.current.mutateAsync({ email: 'b@test.com', password: 'password123' });
+    });
+    await waitFor(() => expect(probe.result.current.data).toEqual(userB));
+
+    await act(async () => {
+      rejectStaleFetch(new Error('인증되지 않았습니다.'));
+      await new Promise((resolve) => setTimeout(resolve, 20));
+    });
+    expect(probe.result.current.data).toEqual(userB);
+    expect(probe.result.current.isError).toBe(false);
   });
 });
