@@ -4,6 +4,7 @@ import com.bidradar.bid.event.BidNoticeCollectedEvent;
 import com.bidradar.bid.infra.dto.G2bNoticeItem;
 import com.bidradar.bid.repository.BidAttachmentRepository;
 import com.bidradar.bid.repository.BidNoticeRepository;
+import com.bidradar.common.config.ClockConfig;
 import com.bidradar.config.JpaConfig;
 import com.bidradar.support.IntegrationTestBase;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -24,7 +25,7 @@ import static org.mockito.Mockito.when;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import({BidNoticeProcessor.class, G2bNoticeMapper.class, JpaConfig.class})
+@Import({BidNoticeProcessor.class, G2bNoticeMapper.class, JpaConfig.class, ClockConfig.class})
 @RecordApplicationEvents
 class BidNoticeProcessorTest extends IntegrationTestBase {
 

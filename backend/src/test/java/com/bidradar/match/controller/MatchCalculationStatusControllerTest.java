@@ -14,7 +14,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 import static org.hamcrest.Matchers.nullValue;
@@ -44,7 +44,7 @@ class MatchCalculationStatusControllerTest {
     @DisplayName("GET /api/companies/me/match-status 요청 시 현재 계산 상태가 반환된다")
     void getStatus_현재_상태를_반환한다() throws Exception {
         // given
-        LocalDateTime updatedAt = LocalDateTime.of(2026, 8, 1, 12, 0);
+        Instant updatedAt = Instant.parse("2026-08-01T12:00:00Z");
         given(matchCalculationStatusService.getStatus(1L))
                 .willReturn(new MatchCalculationStatusResponse(MatchCalculationStatusType.DONE, updatedAt));
 
@@ -52,7 +52,8 @@ class MatchCalculationStatusControllerTest {
         mockMvc.perform(get("/api/companies/me/match-status").with(authentication(authOf(1L))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.header.resultCode").value("200"))
-                .andExpect(jsonPath("$.data.status").value("DONE"));
+                .andExpect(jsonPath("$.data.status").value("DONE"))
+                .andExpect(jsonPath("$.data.updatedAt").value("2026-08-01T12:00:00Z"));
     }
 
     @Test

@@ -3,6 +3,7 @@ package com.bidradar.company.domain;
 import com.bidradar.auth.domain.User;
 import com.bidradar.code.domain.BusinessArea;
 import com.bidradar.code.domain.TechTag;
+import com.bidradar.common.config.ClockConfig;
 import com.bidradar.config.JpaConfig;
 import com.bidradar.support.IntegrationTestBase;
 import jakarta.persistence.PersistenceException;
@@ -21,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(JpaConfig.class)
+@Import({JpaConfig.class, ClockConfig.class})
 class CompanyEntityMappingTest extends IntegrationTestBase {
 
     @Autowired

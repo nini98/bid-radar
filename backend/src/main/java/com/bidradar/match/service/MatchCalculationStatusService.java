@@ -13,7 +13,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.UUID;
 
 @Service
@@ -42,7 +43,7 @@ public class MatchCalculationStatusService {
                 .orElseThrow(() -> new ApiException(ResultCode.NOT_FOUND));
 
         String newToken = UUID.randomUUID().toString();
-        LocalDateTime staleBefore = LocalDateTime.now().minusMinutes(MatchCalculationStatus.LOCK_STALE_MINUTES);
+        Instant staleBefore = Instant.now().minus(Duration.ofMinutes(MatchCalculationStatus.LOCK_STALE_MINUTES));
         int acquired = matchCalculationStatusRepository.acquireRetryLock(status.getId(), staleBefore, newToken);
         if (acquired == 0) {
             throw new ApiException(ResultCode.MATCH_CALCULATION_RETRY_NOT_ALLOWED);

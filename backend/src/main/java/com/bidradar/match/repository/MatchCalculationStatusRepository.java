@@ -8,7 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Optional;
 
 public interface MatchCalculationStatusRepository extends JpaRepository<MatchCalculationStatus, Long> {
@@ -31,7 +31,7 @@ public interface MatchCalculationStatusRepository extends JpaRepository<MatchCal
               AND (s.status <> com.bidradar.match.domain.MatchCalculationStatusType.IN_PROGRESS
                    OR s.updatedAt < :staleBefore)
             """)
-    int acquireLock(@Param("id") Long id, @Param("staleBefore") LocalDateTime staleBefore, @Param("newToken") String newToken);
+    int acquireLock(@Param("id") Long id, @Param("staleBefore") Instant staleBefore, @Param("newToken") String newToken);
 
     /**
      * 재시도 전용 CAS: FAILED이거나, IN_PROGRESS인데 죽은 것으로 간주되는 낡은 락(updatedAt이 staleBefore 이전)일 때만
@@ -51,7 +51,7 @@ public interface MatchCalculationStatusRepository extends JpaRepository<MatchCal
                    OR (s.status = com.bidradar.match.domain.MatchCalculationStatusType.IN_PROGRESS
                        AND s.updatedAt < :staleBefore))
             """)
-    int acquireRetryLock(@Param("id") Long id, @Param("staleBefore") LocalDateTime staleBefore, @Param("newToken") String newToken);
+    int acquireRetryLock(@Param("id") Long id, @Param("staleBefore") Instant staleBefore, @Param("newToken") String newToken);
 
     /**
      * 진행 중인 재계산 작업이 자신이 여전히 유효한 락 소유자임을 알리는 생존 신고.

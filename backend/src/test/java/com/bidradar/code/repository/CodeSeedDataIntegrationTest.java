@@ -1,5 +1,6 @@
 package com.bidradar.code.repository;
 
+import com.bidradar.common.config.ClockConfig;
 import com.bidradar.config.JpaConfig;
 import com.bidradar.support.IntegrationTestBase;
 import org.junit.jupiter.api.DisplayName;
@@ -14,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-@Import(JpaConfig.class)
+@Import({JpaConfig.class, ClockConfig.class})
 class CodeSeedDataIntegrationTest extends IntegrationTestBase {
 
     private static final Sort ID_ASC = Sort.by(Sort.Direction.ASC, "id");
