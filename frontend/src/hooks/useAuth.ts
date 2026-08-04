@@ -43,7 +43,12 @@ export function useLogout() {
   return useMutation({
     mutationFn: logout,
     onSettled: () => {
-      queryClient.removeQueries({ queryKey: ['auth'] });
+      // removeQueries는 활성 observer가 있는 쿼리를 캐시에서 완전히 제거하면서 그 observer를
+      // 캐시 알림에서도 분리시킨다(TanStack Query issue #8597, works-as-designed). auth.me는
+      // 라우트 전환과 무관하게 항상 마운트된 MatchStatusWatcher가 구독 중이라, removeQueries를
+      // 쓰면 그 이후의 로그인 성공(setQueryData) 알림을 영원히 못 받는다. resetQueries는 같은
+      // Query 인스턴스를 유지한 채 초기 상태로 되돌려 observer 연결이 끊기지 않는다.
+      queryClient.resetQueries({ queryKey: ['auth'] });
       queryClient.removeQueries({ queryKey: ['bids'] });
       navigate('/login', { replace: true });
     },
