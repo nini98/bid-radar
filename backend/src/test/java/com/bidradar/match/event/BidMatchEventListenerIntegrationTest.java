@@ -120,10 +120,14 @@ class BidMatchEventListenerIntegrationTest extends IntegrationTestBase {
         });
 
         // then: 콜백이 끝나 커밋이 완료되면, 결국 두 회사 모두에 대해 별도 스레드에서 호출된다.
-        verify(matchCalculationService, timeout(5000))
-                .calculateAndSave(any(), argThat(c -> c.getId().equals(companyA.getId())));
-        verify(matchCalculationService, timeout(5000))
-                .calculateAndSave(any(), argThat(c -> c.getId().equals(companyB.getId())));
+        // (Codex 리뷰 반영: bid 인자도 any() 대신 ID로 좁혀서, 다른 테스트/스케줄러가 만든
+        //  엉뚱한 공고로 호출된 걸 이 공고로 호출된 것으로 착각하지 않도록 함)
+        verify(matchCalculationService, timeout(5000)).calculateAndSave(
+                argThat(bn -> bn.getId().equals(bidNotice.getId())),
+                argThat(c -> c.getId().equals(companyA.getId())));
+        verify(matchCalculationService, timeout(5000)).calculateAndSave(
+                argThat(bn -> bn.getId().equals(bidNotice.getId())),
+                argThat(c -> c.getId().equals(companyB.getId())));
         assertThat(capturedThreadNames).isNotEmpty();
         assertThat(capturedThreadNames).allMatch(name -> name.startsWith("match-exec-"));
     }
