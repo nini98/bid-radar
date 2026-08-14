@@ -135,8 +135,13 @@ class BidMatchEventListenerIntegrationTest extends IntegrationTestBase {
     @Test
     @DisplayName("이벤트를 발행한 트랜잭션이 롤백되면 리스너가 실행되지 않는다")
     void 트랜잭션이_롤백되면_리스너가_실행되지_않는다() throws InterruptedException {
-        // given: 별도의 커밋되는 트랜잭션으로 공고를 미리 만들어둔다.
+        // given: 별도의 커밋되는 트랜잭션으로 공고와 회사를 미리 만들어둔다.
+        // (Codex 리뷰 반영: 회사가 하나도 없으면 리스너가 롤백에도 불구하고 실행되더라도
+        //  companyRepository.findAll()이 빈 리스트라 calculateAndSave 자체가 호출될 일이
+        //  없어서, "회사가 없어서" 우연히 통과하는 것과 "롤백이 실제로 막아서" 통과하는 것을
+        //  구분 못 하는 문제가 있었다)
         BidNotice bidNotice = saveBidNotice("ROLLBACK-TEST-" + System.nanoTime());
+        saveCompany("롤백테스트회사" + System.nanoTime());
 
         // when: 이벤트만 발행하고 트랜잭션은 롤백한다.
         TransactionTemplate rollingBackTx = new TransactionTemplate(transactionManager);
