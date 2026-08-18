@@ -56,6 +56,14 @@ public class CompanyProfileMatchEventListener {
                     stillOwner = matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bid, company, event.lockToken());
                 } catch (Exception e) {
                     log.error("재계산 실패: bidNoticeId={}, companyId={}", bid.getId(), company.getId(), e);
+                    // 실패 기록 저장 자체가 또 실패해도 이 예외가 for문을 끊고 나머지 공고 처리를
+                    // 막아버리면 안 되므로 별도로 잡는다 (Issue #40).
+                    try {
+                        matchCalculationStatusCoordinator.markFailed(bid, company, buildErrorMessage(e));
+                    } catch (Exception saveException) {
+                        log.error("매칭 실패 상태 저장도 실패: bidNoticeId={}, companyId={}, 원본예외={}",
+                                bid.getId(), company.getId(), e.toString(), saveException);
+                    }
                     continue;
                 }
                 if (!stillOwner) {
@@ -68,5 +76,11 @@ public class CompanyProfileMatchEventListener {
             log.error("회사 매칭 재계산 배치 실패: companyId={}", event.companyId(), e);
             matchCalculationStatusCoordinator.finish(event.companyId(), event.lockToken(), MatchCalculationStatusType.FAILED);
         }
+    }
+
+    private String buildErrorMessage(Exception e) {
+        return e.getMessage() != null
+                ? e.getClass().getSimpleName() + ": " + e.getMessage()
+                : e.getClass().getSimpleName();
     }
 }

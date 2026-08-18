@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
@@ -98,6 +99,27 @@ class CompanyProfileMatchEventListenerTest {
         listener.handle(new MatchRecalculationRequestedEvent(1L, TOKEN));
 
         // then
+        verify(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidB, company, TOKEN);
+        verify(matchCalculationStatusCoordinator).markFailed(eq(bidA), eq(company), any());
+        verify(matchCalculationStatusCoordinator).finish(1L, TOKEN, MatchCalculationStatusType.DONE);
+    }
+
+    @Test
+    @DisplayName("실패 상태 저장까지 실패해도 그 예외가 루프를 끊지 않고 나머지 공고는 계속 처리된다")
+    void 실패상태저장까지_실패해도_루프가_안끊기고_나머지공고는_계속처리된다() {
+        // given
+        given(companyRepository.findById(1L)).willReturn(Optional.of(company));
+        given(bidNoticeRepository.findAll()).willReturn(List.of(bidA, bidB));
+        doThrow(new RuntimeException("계산 실패"))
+                .when(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidA, company, TOKEN);
+        doThrow(new RuntimeException("실패 상태 저장도 실패"))
+                .when(matchCalculationStatusCoordinator).markFailed(eq(bidA), eq(company), any());
+        given(matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bidB, company, TOKEN)).willReturn(true);
+
+        // when
+        listener.handle(new MatchRecalculationRequestedEvent(1L, TOKEN));
+
+        // then: bidA의 계산과 실패 기록이 둘 다 실패해도 bidB는 여전히 정상적으로 시도된다.
         verify(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidB, company, TOKEN);
         verify(matchCalculationStatusCoordinator).finish(1L, TOKEN, MatchCalculationStatusType.DONE);
     }

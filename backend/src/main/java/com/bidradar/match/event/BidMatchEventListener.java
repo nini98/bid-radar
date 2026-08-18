@@ -39,7 +39,21 @@ public class BidMatchEventListener {
                 matchCalculationService.calculateAndSave(bid, company);
             } catch (Exception e) {
                 log.error("매칭 계산 실패: bidNoticeId={}, companyId={}", bid.getId(), company.getId(), e);
+                // 실패 기록 저장 자체가 또 실패해도 이 예외가 for문을 끊고 나머지 회사 처리를
+                // 막아버리면 안 되므로 별도로 잡는다 (Issue #40).
+                try {
+                    matchCalculationService.markFailed(bid, company, buildErrorMessage(e));
+                } catch (Exception saveException) {
+                    log.error("매칭 실패 상태 저장도 실패: bidNoticeId={}, companyId={}, 원본예외={}",
+                            bid.getId(), company.getId(), e.toString(), saveException);
+                }
             }
         }
+    }
+
+    private String buildErrorMessage(Exception e) {
+        return e.getMessage() != null
+                ? e.getClass().getSimpleName() + ": " + e.getMessage()
+                : e.getClass().getSimpleName();
     }
 }

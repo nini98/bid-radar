@@ -77,4 +77,48 @@ class BidMatchResultEntityMappingTest extends IntegrationTestBase {
                 null, null, null, null, null, null)))
                 .isInstanceOf(PersistenceException.class);
     }
+
+    @Test
+    @DisplayName("FAILED 결과가 점수 필드 전부 null인 채로 저장되고 조회된다")
+    void FAILED_결과가_점수없이_저장되고_조회된다() {
+        // given
+        BidNotice bidNotice = entityManager.persistAndFlush(
+                BidNotice.create("20250003", "G2B", "테스트 공고3", BidStatus.OPEN));
+        User user = entityManager.persistAndFlush(User.create("owner3@bidradar.com", "hash", "홍길동"));
+        Company company = entityManager.persistAndFlush(Company.create(user, "테스트 회사3"));
+
+        BidMatchResult result = entityManager.persistAndFlush(
+                BidMatchResult.createFailed(bidNotice, company, "RuntimeException: 계산 중 오류"));
+
+        // when
+        entityManager.clear();
+        BidMatchResult found = entityManager.find(BidMatchResult.class, result.getId());
+
+        // then
+        assertThat(found.getStatus()).isEqualTo(BidMatchResultStatus.FAILED);
+        assertThat(found.getErrorMessage()).isEqualTo("RuntimeException: 계산 중 오류");
+        assertThat(found.getTotalScore()).isNull();
+        assertThat(found.getGrade()).isNull();
+    }
+
+    @Test
+    @DisplayName("status와 점수 조합이 CHECK 제약을 위반하면 저장이 거부된다")
+    void status와_점수조합이_CHECK_제약을_위반하면_저장이_거부된다() {
+        // given: 엔티티의 create()/createFailed()/markFailed()는 항상 일관된 조합만 만들어내므로,
+        // DB 레벨 방어를 직접 검증하려면 네이티브 SQL로 불일치 조합을 강제로 넣어야 한다.
+        BidNotice bidNotice = entityManager.persistAndFlush(
+                BidNotice.create("20250004", "G2B", "테스트 공고4", BidStatus.OPEN));
+        User user = entityManager.persistAndFlush(User.create("owner4@bidradar.com", "hash", "홍길동"));
+        Company company = entityManager.persistAndFlush(Company.create(user, "테스트 회사4"));
+
+        // when // then: status=SUCCESS인데 total_score/grade가 없는 모순된 조합
+        assertThatThrownBy(() -> {
+            entityManager.getEntityManager().createNativeQuery(
+                            "INSERT INTO bid_match_results (bid_notice_id, company_id, status, calculated_at, created_at) "
+                                    + "VALUES (:bidNoticeId, :companyId, 'SUCCESS', now(), now())")
+                    .setParameter("bidNoticeId", bidNotice.getId())
+                    .setParameter("companyId", company.getId())
+                    .executeUpdate();
+        }).isInstanceOf(PersistenceException.class);
+    }
 }

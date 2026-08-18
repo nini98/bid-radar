@@ -36,6 +36,15 @@ public class MatchCalculationStatusCoordinator {
     }
 
     /**
+     * 공고 단위 매칭 계산 실패를 {@code MatchCalculationService}에 위임한다 (Issue #40).
+     * 리스너가 {@code MatchCalculationService}를 직접 알지 않고 이 코디네이터를 통해서만
+     * 접근하는 기존 경계를 그대로 유지하기 위한 passthrough.
+     */
+    public void markFailed(BidNotice bid, Company company, String errorMessage) {
+        matchCalculationService.markFailed(bid, company, errorMessage);
+    }
+
+    /**
      * REQUIRES_NEW: 이 메서드는 원래 트랜잭션이 이미 커밋된 AFTER_COMMIT 콜백 스레드에서도 호출될 수 있다.
      * 그 시점엔 원래 트랜잭션의 리소스가 아직 스레드에 바인딩되어 있을 수 있어, 기본 REQUIRED로는
      * 이 메서드의 변경이 독립적으로 커밋된다는 보장이 없다. REQUIRES_NEW로 항상 새 트랜잭션을 강제한다.
