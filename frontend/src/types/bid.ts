@@ -1,11 +1,13 @@
 export type BidStatus = 'OPEN' | 'CLOSED' | 'CANCELED';
 export type BidSortType = 'LATEST' | 'DEADLINE' | 'SCORE';
 export type MatchGrade = 'STRONG_REVIEW' | 'RECOMMENDED' | 'NEED_REVIEW';
+export type MatchResultStatus = 'SUCCESS' | 'FAILED';
 
 export interface MatchResultSummary {
-  totalScore: number;
-  grade: MatchGrade;
-  displayText: string;
+  status: MatchResultStatus;
+  totalScore: number | null;
+  grade: MatchGrade | null;
+  displayText: string | null;
 }
 
 export interface MatchResult extends MatchResultSummary {

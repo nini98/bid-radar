@@ -196,6 +196,7 @@ export interface BidNoticeSummary {
   - 적합도 80점↑: `text-green-600` / `bg-green-50`
   - 적합도 60~79점: `text-orange-500` / `bg-orange-50`
   - 적합도 60점↓ / 미분석: `text-gray-400` / `bg-gray-50`
+  - 적합도 계산 실패(`status=FAILED`): `text-red-500` / `bg-red-50` (Issue #40)
 - sticky/fixed 헤더가 있는 화면의 폼 요소에는 `scroll-mt-*`를 적용한다. 브라우저 네이티브 검증(필수값 미입력, 타입 불일치 등) 실패 시 해당 요소로 스크롤되는데, `scroll-mt` 없이는 헤더에 가려 사용자가 어떤 필드가 문제인지 보지 못한다.
 - (모바일 지원이 실제 목표인 프로덕트에 한해) 고정 width 클래스(`w-40` 등)를 `flex` row에 쓸 때는 좁은 뷰포트에서 넘치지 않도록 `sm:` 프리픽스로 감싼다 (`w-full sm:w-40` + `flex-col sm:flex-row`). **Bid Radar는 데스크톱 전용 서비스로 모바일 지원이 목표가 아니므로 이 항목은 적용하지 않는다** — 이 문서를 다른(모바일 지원) 프로젝트에서 참고할 때만 적용한다.
 

@@ -9,6 +9,7 @@ import com.bidradar.common.config.ClockConfig;
 import com.bidradar.company.domain.Company;
 import com.bidradar.config.JpaConfig;
 import com.bidradar.match.domain.BidMatchResult;
+import com.bidradar.match.domain.BidMatchResultStatus;
 import com.bidradar.match.domain.MatchGrade;
 import com.bidradar.support.IntegrationTestBase;
 import org.junit.jupiter.api.DisplayName;
@@ -58,6 +59,7 @@ class BidNoticeRepositoryImplTest extends IntegrationTestBase {
         // then
         assertThat(page.getContent()).hasSize(1);
         assertThat(page.getContent().get(0).matchResult()).isNotNull();
+        assertThat(page.getContent().get(0).matchResult().status()).isEqualTo(BidMatchResultStatus.SUCCESS);
         assertThat(page.getContent().get(0).matchResult().totalScore()).isEqualByComparingTo("85.00");
         assertThat(page.getContent().get(0).matchResult().grade()).isEqualTo(MatchGrade.STRONG_REVIEW);
         assertThat(page.getContent().get(0).matchResult().displayText()).isEqualTo("적극 검토");
@@ -86,10 +88,11 @@ class BidNoticeRepositoryImplTest extends IntegrationTestBase {
     }
 
     @Test
-    @DisplayName("매치 결과가 FAILED면 row가 존재해도 목록에서 matchResult가 null이다")
-    void 매치결과가_FAILED면_matchResult가_null이다() {
-        // given: FAILED row도 total_score가 null이라, LEFT JOIN 미스와 동일하게
-        // BidNoticeSummaryResponse의 compact 생성자에서 null로 정규화된다 (Codex 리뷰, Issue #40).
+    @DisplayName("매치 결과가 FAILED면 row가 존재해도 status=FAILED로 목록에 노출된다")
+    void 매치결과가_FAILED면_matchResult에_FAILED가_노출된다() {
+        // given: FAILED row는 total_score가 null이지만 status가 채워져 있어, LEFT JOIN 미스(둘 다
+        // null)와 구분된다. BidNoticeSummaryResponse의 compact 생성자는 status 유무로 정규화한다
+        // (Issue #40 프론트 노출 Task).
         BidNotice bid = entityManager.persistAndFlush(createBid("20250103"));
         Company company = createCompany("owner3@bidradar.com");
         entityManager.persistAndFlush(BidMatchResult.createFailed(bid, company, "RuntimeException: 계산 중 오류"));
@@ -103,7 +106,10 @@ class BidNoticeRepositoryImplTest extends IntegrationTestBase {
 
         // then
         assertThat(page.getContent()).hasSize(1);
-        assertThat(page.getContent().get(0).matchResult()).isNull();
+        assertThat(page.getContent().get(0).matchResult()).isNotNull();
+        assertThat(page.getContent().get(0).matchResult().status()).isEqualTo(BidMatchResultStatus.FAILED);
+        assertThat(page.getContent().get(0).matchResult().totalScore()).isNull();
+        assertThat(page.getContent().get(0).matchResult().grade()).isNull();
     }
 
     @Test
