@@ -58,11 +58,18 @@ public class CompanyProfileMatchEventListener {
                     log.error("재계산 실패: bidNoticeId={}, companyId={}", bid.getId(), company.getId(), e);
                     // 실패 기록 저장 자체가 또 실패해도 이 예외가 for문을 끊고 나머지 공고 처리를
                     // 막아버리면 안 되므로 별도로 잡는다 (Issue #40).
+                    boolean failedRecordOwner;
                     try {
-                        matchCalculationStatusCoordinator.markFailed(bid, company, buildErrorMessage(e));
+                        failedRecordOwner = matchCalculationStatusCoordinator.markFailedIfOwner(
+                                bid, company, event.lockToken(), buildErrorMessage(e));
                     } catch (Exception saveException) {
                         log.error("매칭 실패 상태 저장도 실패: bidNoticeId={}, companyId={}, 원본예외={}",
                                 bid.getId(), company.getId(), e.toString(), saveException);
+                        continue;
+                    }
+                    if (!failedRecordOwner) {
+                        log.warn("다른 재계산 작업에 락을 넘겨줘 실행을 중단함(실패 기록 시점): companyId={}", event.companyId());
+                        return;
                     }
                     continue;
                 }

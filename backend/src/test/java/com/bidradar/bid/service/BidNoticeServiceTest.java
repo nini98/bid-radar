@@ -137,4 +137,25 @@ class BidNoticeServiceTest {
         assertThat(result.matchResult().grade()).isEqualTo(MatchGrade.STRONG_REVIEW);
         assertThat(result.matchResult().displayText()).isEqualTo("적극 검토");
     }
+
+    @Test
+    @DisplayName("매치 결과가 FAILED면 상세 조회 시 matchResult가 null로 숨겨진다")
+    void 매치결과가_FAILED면_상세조회시_matchResult가_null이다() {
+        // given: FAILED 결과를 그대로 내려보내면 점수 필드가 전부 null인 응답이 되어
+        // 기존 응답 계약(matchResult가 있으면 점수도 있음)을 깬다 (Codex 리뷰, Issue #40).
+        // 실패 상태를 실제로 노출하는 건 별도 Task 몫이라 지금은 "미계산"과 동일하게 숨긴다.
+        Long bidId = 1L;
+        ReflectionTestUtils.setField(company, "id", 10L);
+        BidMatchResult failedResult = BidMatchResult.createFailed(notice, company, "RuntimeException: 계산 중 오류");
+        given(bidNoticeRepository.findById(bidId)).willReturn(Optional.of(notice));
+        given(bidAttachmentRepository.findByBidNoticeId(bidId)).willReturn(List.of());
+        given(companyRepository.findByUserId(userId)).willReturn(Optional.of(company));
+        given(bidMatchResultRepository.findByBidNoticeIdAndCompanyId(bidId, 10L)).willReturn(Optional.of(failedResult));
+
+        // when
+        BidNoticeDetailResponse result = service.getDetail(bidId, userId);
+
+        // then
+        assertThat(result.matchResult()).isNull();
+    }
 }

@@ -13,6 +13,7 @@ import com.bidradar.common.response.ResultCode;
 import com.bidradar.company.domain.Company;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.match.domain.BidMatchResult;
+import com.bidradar.match.domain.BidMatchResultStatus;
 import com.bidradar.match.repository.BidMatchResultRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -79,6 +80,13 @@ public class BidNoticeService {
         BidMatchResult matchResult = companyRepository.findByUserId(userId)
                 .flatMap(company -> bidMatchResultRepository.findByBidNoticeIdAndCompanyId(bidId, company.getId()))
                 .orElse(null);
+        // FAILED 결과(점수 전부 null)를 그대로 내려보내면 MatchResultResponse의 필수 필드가
+        // null이 되어 기존 응답 계약을 깬다 (프론트 MatchBadge가 "null null점"을 표시함).
+        // 실패 상태를 실제로 노출하는 건 Issue #40의 별도 Task(응답 계약 변경 + 프론트 분기
+        // 필요) 몫이라, 그때까지는 "미계산"과 동일하게 숨긴다 (Codex 리뷰).
+        if (matchResult != null && matchResult.getStatus() == BidMatchResultStatus.FAILED) {
+            matchResult = null;
+        }
 
         return bidNoticeMapper.toDetailResponse(notice, attachments, matchResult);
     }

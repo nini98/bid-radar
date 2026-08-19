@@ -36,12 +36,20 @@ public class MatchCalculationStatusCoordinator {
     }
 
     /**
-     * 공고 단위 매칭 계산 실패를 {@code MatchCalculationService}에 위임한다 (Issue #40).
-     * 리스너가 {@code MatchCalculationService}를 직접 알지 않고 이 코디네이터를 통해서만
-     * 접근하는 기존 경계를 그대로 유지하기 위한 passthrough.
+     * 공고 단위 매칭 계산 실패를 기록한다. {@link #calculateAndSaveIfOwner}와 동일하게 heartbeat로
+     * 락 토큰을 같은 트랜잭션에서 검증한 뒤에만 저장한다 — 계산 도중 락이 죽은 락 복구(5분 유효기간)로
+     * 이미 다른 작업에 넘어갔다면, 소유권을 잃은 이 작업이 그 새 작업의 최신 SUCCESS를 FAILED로
+     * 덮어써버리면 안 되기 때문이다 (Codex 리뷰, Issue #40).
+     *
+     * @return 여전히 유효한 소유자여서 실패 기록까지 마쳤으면 true, 이미 다른 작업에 밀려 건너뛰었으면 false
      */
-    public void markFailed(BidNotice bid, Company company, String errorMessage) {
+    @Transactional
+    public boolean markFailedIfOwner(BidNotice bid, Company company, String lockToken, String errorMessage) {
+        if (matchCalculationStatusRepository.heartbeat(company.getId(), lockToken) == 0) {
+            return false;
+        }
         matchCalculationService.markFailed(bid, company, errorMessage);
+        return true;
     }
 
     /**

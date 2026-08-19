@@ -93,6 +93,8 @@ class CompanyProfileMatchEventListenerTest {
         given(bidNoticeRepository.findAll()).willReturn(List.of(bidA, bidB));
         doThrow(new RuntimeException("계산 실패"))
                 .when(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidA, company, TOKEN);
+        given(matchCalculationStatusCoordinator.markFailedIfOwner(eq(bidA), eq(company), eq(TOKEN), any()))
+                .willReturn(true);
         given(matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bidB, company, TOKEN)).willReturn(true);
 
         // when
@@ -100,7 +102,7 @@ class CompanyProfileMatchEventListenerTest {
 
         // then
         verify(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidB, company, TOKEN);
-        verify(matchCalculationStatusCoordinator).markFailed(eq(bidA), eq(company), any());
+        verify(matchCalculationStatusCoordinator).markFailedIfOwner(eq(bidA), eq(company), eq(TOKEN), any());
         verify(matchCalculationStatusCoordinator).finish(1L, TOKEN, MatchCalculationStatusType.DONE);
     }
 
@@ -113,7 +115,7 @@ class CompanyProfileMatchEventListenerTest {
         doThrow(new RuntimeException("계산 실패"))
                 .when(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidA, company, TOKEN);
         doThrow(new RuntimeException("실패 상태 저장도 실패"))
-                .when(matchCalculationStatusCoordinator).markFailed(eq(bidA), eq(company), any());
+                .when(matchCalculationStatusCoordinator).markFailedIfOwner(eq(bidA), eq(company), eq(TOKEN), any());
         given(matchCalculationStatusCoordinator.calculateAndSaveIfOwner(bidB, company, TOKEN)).willReturn(true);
 
         // when
@@ -122,6 +124,26 @@ class CompanyProfileMatchEventListenerTest {
         // then: bidA의 계산과 실패 기록이 둘 다 실패해도 bidB는 여전히 정상적으로 시도된다.
         verify(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidB, company, TOKEN);
         verify(matchCalculationStatusCoordinator).finish(1L, TOKEN, MatchCalculationStatusType.DONE);
+    }
+
+    @Test
+    @DisplayName("실패 기록 시점에 이미 락을 잃었으면 실패 기록도 남기지 않고 루프를 중단한다")
+    void 실패기록시점에_락을잃었으면_기록하지않고_루프를_중단한다() {
+        // given: bidA 계산 도중 락이 죽은 락 복구로 이미 다른 작업에 넘어간 상황(heartbeat 실패)
+        given(companyRepository.findById(1L)).willReturn(Optional.of(company));
+        given(bidNoticeRepository.findAll()).willReturn(List.of(bidA, bidB));
+        doThrow(new RuntimeException("계산 실패"))
+                .when(matchCalculationStatusCoordinator).calculateAndSaveIfOwner(bidA, company, TOKEN);
+        given(matchCalculationStatusCoordinator.markFailedIfOwner(eq(bidA), eq(company), eq(TOKEN), any()))
+                .willReturn(false);
+
+        // when
+        listener.handle(new MatchRecalculationRequestedEvent(1L, TOKEN));
+
+        // then: 이미 다른 작업에 소유권이 넘어갔으므로 bidB는 시도하지 않고, 최종 상태도 기록하지 않는다
+        //       (그 작업의 최신 결과를 이 작업이 덮어쓰면 안 되므로 — Codex 리뷰).
+        verify(matchCalculationStatusCoordinator, never()).calculateAndSaveIfOwner(bidB, company, TOKEN);
+        verify(matchCalculationStatusCoordinator, never()).finish(any(), any(), any());
     }
 
     @Test

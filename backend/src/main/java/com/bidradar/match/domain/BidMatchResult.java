@@ -39,11 +39,15 @@ public class BidMatchResult {
             foreignKey = @ForeignKey(name = "fk_bid_match_results_company"))
     private Company company;
 
-    @Column(name = "total_score", nullable = false, precision = 5, scale = 2)
+    // status=FAILED일 때는 null (Issue #40) — DB 제약(V15의 ck_bid_match_results_status_consistency)과
+    // 반드시 일치해야 한다. nullable=false로 두면 hibernate.check_nullability 활성 환경에서
+    // FAILED 저장 시 flush 단계에서 PropertyValueException이 발생한다 (Codex 리뷰).
+    @Column(name = "total_score", precision = 5, scale = 2)
     private BigDecimal totalScore;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "grade", nullable = false, length = 20)
+    // status=FAILED일 때는 null (Issue #40) — 위 total_score와 동일한 이유.
+    @Column(name = "grade", length = 20)
     private MatchGrade grade;
 
     @Column(name = "score_tech", precision = 5, scale = 2)
