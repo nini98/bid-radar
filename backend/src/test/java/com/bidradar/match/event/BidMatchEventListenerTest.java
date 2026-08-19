@@ -120,8 +120,8 @@ class BidMatchEventListenerTest {
 
         // then
         verify(matchCalculationService, never()).calculateAndSave(any(), any());
-        verify(matchCalculationService).markFailed(eq(bid), eq(companyA), any());
-        verify(matchCalculationService).markFailed(eq(bid), eq(companyB), any());
+        verify(matchCalculationService).markFailedInNewTransaction(eq(bid), eq(companyA), any());
+        verify(matchCalculationService).markFailedInNewTransaction(eq(bid), eq(companyB), any());
     }
 
     @Test
@@ -136,7 +136,7 @@ class BidMatchEventListenerTest {
 
         // then
         verify(companyRepository, never()).findAll();
-        verify(matchCalculationService, never()).markFailed(any(), any(), any());
+        verify(matchCalculationService, never()).markFailedInNewTransaction(any(), any(), any());
     }
 
     @Test
@@ -147,12 +147,12 @@ class BidMatchEventListenerTest {
         given(bidNoticeRepository.findById(1L)).willReturn(Optional.of(bid));
         given(companyRepository.findAll()).willReturn(List.of(companyA, companyB));
         doThrow(new RuntimeException("저장 실패")).when(matchCalculationService)
-                .markFailed(eq(bid), eq(companyA), any());
+                .markFailedInNewTransaction(eq(bid), eq(companyA), any());
 
         // when
         listener.handle(new BidNoticeCollectedEvent(1L));
 
         // then
-        verify(matchCalculationService).markFailed(eq(bid), eq(companyB), any());
+        verify(matchCalculationService).markFailedInNewTransaction(eq(bid), eq(companyB), any());
     }
 }

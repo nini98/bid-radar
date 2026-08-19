@@ -10,6 +10,7 @@ import com.bidradar.match.domain.BidMatchResult;
 import com.bidradar.match.repository.BidMatchResultRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Set;
@@ -26,13 +27,30 @@ public class MatchCalculationService {
     private final MatchingEngine matchingEngine;
 
     /**
-     * 계산이 실패했을 때 실패 사실을 기록한다. 항상 이전 {@code @Transactional} 호출
-     * (예: {@link #calculateAndSave}, {@code MatchCalculationStatusCoordinator.calculateAndSaveIfOwner})이
-     * 이미 커밋/롤백을 마치고 반환된 뒤 비동기 풀 스레드에서 호출되므로, 이 시점엔 활성 트랜잭션이
-     * 없다. 그래서 {@code REQUIRES_NEW}가 아니라 기본 REQUIRED로도 독립적인 커밋이 보장된다.
+     * 계산이 실패했을 때 실패 사실을 기록한다. {@code MatchCalculationStatusCoordinator.markFailedIfOwner()}가
+     * heartbeat(락 확인)와 이 저장을 하나의 트랜잭션으로 묶기 위해 REQUIRED로 참여하는 것에 의존하므로,
+     * 이 메서드의 propagation을 임의로 REQUIRES_NEW로 바꾸면 그 결합이 깨진다. AFTER_COMMIT 콜백
+     * 스레드에서 직접 호출해야 하는 경우는 {@link #markFailedInNewTransaction} 사용.
      */
     @Transactional
     public void markFailed(BidNotice bid, Company company, String errorMessage) {
+        markFailedInternal(bid, company, errorMessage);
+    }
+
+    /**
+     * {@code BidMatchEventListener}가 스레드풀 제출 거부를 처리할 때처럼, AFTER_COMMIT 콜백을
+     * 호출한 스레드에서 직접 호출되는 경우 전용이다. 그 시점엔 원래 트랜잭션이 이미 커밋됐지만
+     * 트랜잭션 리소스가 아직 스레드에 바인딩되어 있을 수 있어(Spring이 afterCommit 콜백을
+     * cleanupAfterCompletion()보다 먼저 호출함), 기본 REQUIRED로는 그 stale한 리소스에 참여해버려
+     * 이 저장이 독립적으로 커밋된다는 보장이 없다. REQUIRES_NEW로 항상 새 트랜잭션을 강제한다
+     * (MatchCalculationStatusCoordinator.finish()와 동일한 이유, Issue #51 Codex 리뷰).
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void markFailedInNewTransaction(BidNotice bid, Company company, String errorMessage) {
+        markFailedInternal(bid, company, errorMessage);
+    }
+
+    private void markFailedInternal(BidNotice bid, Company company, String errorMessage) {
         BidMatchResult matchResult = bidMatchResultRepository
                 .findByBidNoticeIdAndCompanyId(bid.getId(), company.getId())
                 .map(existing -> {

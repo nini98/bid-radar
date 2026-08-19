@@ -77,7 +77,8 @@ public class BidMatchEventListener {
         List<Company> companies = companyRepository.findAll();
         for (Company company : companies) {
             try {
-                matchCalculationService.markFailed(bid, company, buildErrorMessage(rejection));
+                // AFTER_COMMIT 콜백 스레드에서 직접 호출되므로 REQUIRES_NEW가 필요하다 (클래스 상단 Javadoc 참고).
+                matchCalculationService.markFailedInNewTransaction(bid, company, buildErrorMessage(rejection));
             } catch (Exception saveException) {
                 log.error("제출 거부 실패 상태 저장도 실패: bidNoticeId={}, companyId={}",
                         bid.getId(), company.getId(), saveException);
