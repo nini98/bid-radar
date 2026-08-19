@@ -86,6 +86,27 @@ class BidNoticeRepositoryImplTest extends IntegrationTestBase {
     }
 
     @Test
+    @DisplayName("매치 결과가 FAILED면 row가 존재해도 목록에서 matchResult가 null이다")
+    void 매치결과가_FAILED면_matchResult가_null이다() {
+        // given: FAILED row도 total_score가 null이라, LEFT JOIN 미스와 동일하게
+        // BidNoticeSummaryResponse의 compact 생성자에서 null로 정규화된다 (Codex 리뷰, Issue #40).
+        BidNotice bid = entityManager.persistAndFlush(createBid("20250103"));
+        Company company = createCompany("owner3@bidradar.com");
+        entityManager.persistAndFlush(BidMatchResult.createFailed(bid, company, "RuntimeException: 계산 중 오류"));
+        entityManager.clear();
+
+        BidSearchCondition condition = new BidSearchCondition(
+                null, null, null, null, null, null, company.getId(), BidSortType.LATEST);
+
+        // when
+        Page<BidNoticeSummaryResponse> page = bidNoticeRepository.search(condition, PageRequest.of(0, 20));
+
+        // then
+        assertThat(page.getContent()).hasSize(1);
+        assertThat(page.getContent().get(0).matchResult()).isNull();
+    }
+
+    @Test
     @DisplayName("grade 필터 적용 시 해당 등급의 매치 결과를 가진 공고만 반환된다")
     void grade_필터가_동작한다() {
         // given

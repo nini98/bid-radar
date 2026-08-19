@@ -39,11 +39,15 @@ public class BidMatchResult {
             foreignKey = @ForeignKey(name = "fk_bid_match_results_company"))
     private Company company;
 
-    @Column(name = "total_score", nullable = false, precision = 5, scale = 2)
+    // status=FAILED일 때는 null (Issue #40) — DB 제약(V15의 ck_bid_match_results_status_consistency)과
+    // 반드시 일치해야 한다. nullable=false로 두면 hibernate.check_nullability 활성 환경에서
+    // FAILED 저장 시 flush 단계에서 PropertyValueException이 발생한다 (Codex 리뷰).
+    @Column(name = "total_score", precision = 5, scale = 2)
     private BigDecimal totalScore;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "grade", nullable = false, length = 20)
+    // status=FAILED일 때는 null (Issue #40) — 위 total_score와 동일한 이유.
+    @Column(name = "grade", length = 20)
     private MatchGrade grade;
 
     @Column(name = "score_tech", precision = 5, scale = 2)
@@ -67,6 +71,13 @@ public class BidMatchResult {
 
     @Column(name = "calculated_at", nullable = false)
     private LocalDateTime calculatedAt;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 20)
+    private BidMatchResultStatus status;
+
+    @Column(name = "error_message", columnDefinition = "TEXT")
+    private String errorMessage;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -94,6 +105,21 @@ public class BidMatchResult {
         result.matchedKeywords = matchedKeywords;
         result.scoreReason = scoreReason;
         result.calculatedAt = LocalDateTime.now();
+        result.status = BidMatchResultStatus.SUCCESS;
+        result.errorMessage = null;
+        return result;
+    }
+
+    /**
+     * 계산이 처음부터 실패해 기존 row가 없는 경우 FAILED row를 생성한다.
+     */
+    public static BidMatchResult createFailed(BidNotice bidNotice, Company company, String errorMessage) {
+        BidMatchResult result = new BidMatchResult();
+        result.bidNotice = bidNotice;
+        result.company = company;
+        result.calculatedAt = LocalDateTime.now();
+        result.status = BidMatchResultStatus.FAILED;
+        result.errorMessage = errorMessage;
         return result;
     }
 
@@ -114,5 +140,25 @@ public class BidMatchResult {
         this.matchedKeywords = matchedKeywords;
         this.scoreReason = scoreReason;
         this.calculatedAt = LocalDateTime.now();
+        this.status = BidMatchResultStatus.SUCCESS;
+        this.errorMessage = null;
+    }
+
+    /**
+     * 재계산 실패 시 이전 성공 점수가 있어도 유지하지 않고 전부 비운다 — 재계산 트리거 자체가
+     * 프로필/공고 데이터 변경을 의미하므로 이전 점수는 stale하다고 판단했기 때문이다 (Issue #40).
+     */
+    public void markFailed(String errorMessage) {
+        this.totalScore = null;
+        this.grade = null;
+        this.scoreTech = null;
+        this.scoreRegion = null;
+        this.scoreBudget = null;
+        this.scoreBusiness = null;
+        this.matchedKeywords = null;
+        this.scoreReason = null;
+        this.calculatedAt = LocalDateTime.now();
+        this.status = BidMatchResultStatus.FAILED;
+        this.errorMessage = errorMessage;
     }
 }

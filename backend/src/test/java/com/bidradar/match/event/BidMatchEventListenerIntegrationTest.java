@@ -28,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -154,5 +155,67 @@ class BidMatchEventListenerIntegrationTest extends IntegrationTestBase {
         // then: 비동기 실행 유예 시간이 지나도 호출되지 않는다(AFTER_COMMIT 콜백 자체가 발동하지 않음).
         Thread.sleep(1000);
         verify(matchCalculationService, never()).calculateAndSave(any(), any());
+    }
+
+    @Test
+    @DisplayName("한 회사의 계산이 실패해도 다른 회사는 정상 처리되고, 실패한 회사는 markFailed가 호출된다")
+    void 한회사_계산실패해도_나머지회사는_정상처리되고_실패한회사는_markFailed가_호출된다() {
+        // given
+        BidNotice bidNotice = saveBidNotice("PARTIAL-FAIL-TEST-" + System.nanoTime());
+        Company companyA = saveCompany("부분실패테스트회사A" + System.nanoTime());
+        Company companyB = saveCompany("부분실패테스트회사B" + System.nanoTime());
+
+        doThrow(new RuntimeException("계산 실패")).when(matchCalculationService)
+                .calculateAndSave(
+                        argThat(bn -> bn.getId().equals(bidNotice.getId())),
+                        argThat(c -> c.getId().equals(companyB.getId())));
+
+        // when
+        TransactionTemplate committingTx = new TransactionTemplate(transactionManager);
+        committingTx.execute(status -> {
+            eventPublisher.publishEvent(new BidNoticeCollectedEvent(bidNotice.getId()));
+            return null;
+        });
+
+        // then: B가 실패해도 A는 정상적으로 계산이 시도되고, B는 markFailed로 실패가 기록된다.
+        verify(matchCalculationService, timeout(5000)).calculateAndSave(
+                argThat(bn -> bn.getId().equals(bidNotice.getId())),
+                argThat(c -> c.getId().equals(companyA.getId())));
+        verify(matchCalculationService, timeout(5000)).markFailed(
+                argThat(bn -> bn.getId().equals(bidNotice.getId())),
+                argThat(c -> c.getId().equals(companyB.getId())),
+                any());
+    }
+
+    @Test
+    @DisplayName("실패 상태 저장까지 실패해도 그 예외가 루프를 끊지 않고 나머지 회사는 계속 처리된다")
+    void 실패상태저장까지_실패해도_루프가_안끊기고_나머지회사는_계속처리된다() {
+        // given
+        BidNotice bidNotice = saveBidNotice("DOUBLE-FAIL-TEST-" + System.nanoTime());
+        Company companyB = saveCompany("이중실패테스트회사B" + System.nanoTime());
+        Company companyC = saveCompany("이중실패테스트회사C" + System.nanoTime());
+
+        doThrow(new RuntimeException("계산 실패")).when(matchCalculationService)
+                .calculateAndSave(
+                        argThat(bn -> bn.getId().equals(bidNotice.getId())),
+                        argThat(c -> c.getId().equals(companyB.getId())));
+        doThrow(new RuntimeException("실패 상태 저장도 실패")).when(matchCalculationService)
+                .markFailed(
+                        argThat(bn -> bn.getId().equals(bidNotice.getId())),
+                        argThat(c -> c.getId().equals(companyB.getId())),
+                        any());
+
+        // when
+        TransactionTemplate committingTx = new TransactionTemplate(transactionManager);
+        committingTx.execute(status -> {
+            eventPublisher.publishEvent(new BidNoticeCollectedEvent(bidNotice.getId()));
+            return null;
+        });
+
+        // then: B의 계산과 실패 기록이 둘 다 실패해도, C는 여전히 정상적으로 시도된다
+        //       (이중 catch가 없었다면 B에서 예외가 for문 밖으로 새서 C는 시도조차 안 됐을 것).
+        verify(matchCalculationService, timeout(5000)).calculateAndSave(
+                argThat(bn -> bn.getId().equals(bidNotice.getId())),
+                argThat(c -> c.getId().equals(companyC.getId())));
     }
 }
