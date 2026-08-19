@@ -121,4 +121,26 @@ class BidMatchResultEntityMappingTest extends IntegrationTestBase {
                     .executeUpdate();
         }).isInstanceOf(PersistenceException.class);
     }
+
+    @Test
+    @DisplayName("FAILED인데 세부 점수 컬럼이 남아있는 조합도 CHECK 제약이 거부한다")
+    void FAILED인데_세부점수가_남아있으면_CHECK_제약이_거부한다() {
+        // given: total_score/grade는 비웠지만 score_tech만 남겨둔 모순된 조합 — V16에서
+        // 넓힌 제약이 아니면 이 조합은 잡히지 않는다 (Codex 리뷰, Issue #40).
+        BidNotice bidNotice = entityManager.persistAndFlush(
+                BidNotice.create("20250005", "G2B", "테스트 공고5", BidStatus.OPEN));
+        User user = entityManager.persistAndFlush(User.create("owner5@bidradar.com", "hash", "홍길동"));
+        Company company = entityManager.persistAndFlush(Company.create(user, "테스트 회사5"));
+
+        // when // then
+        assertThatThrownBy(() -> {
+            entityManager.getEntityManager().createNativeQuery(
+                            "INSERT INTO bid_match_results "
+                                    + "(bid_notice_id, company_id, status, score_tech, calculated_at, created_at) "
+                                    + "VALUES (:bidNoticeId, :companyId, 'FAILED', 20.00, now(), now())")
+                    .setParameter("bidNoticeId", bidNotice.getId())
+                    .setParameter("companyId", company.getId())
+                    .executeUpdate();
+        }).isInstanceOf(PersistenceException.class);
+    }
 }
