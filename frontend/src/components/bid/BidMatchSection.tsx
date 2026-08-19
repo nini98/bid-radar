@@ -28,6 +28,23 @@ export default function BidMatchSection({ matchResult }: Props) {
     );
   }
 
+  if (matchResult.status === 'FAILED') {
+    return (
+      <section className="bg-white rounded-lg border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-sm font-semibold text-gray-900">적합도</h2>
+          <MatchBadge matchResult={matchResult} />
+        </div>
+        <p className="text-sm text-gray-500">
+          이 공고의 적합도 계산에 실패했습니다. 회사 프로필을 다시 저장하면 재계산을 시도할 수 있습니다.{' '}
+          <Link to="/company/profile" className="text-blue-600 hover:underline">
+            프로필로 이동
+          </Link>
+        </p>
+      </section>
+    );
+  }
+
   return (
     <section className="bg-white rounded-lg border border-gray-100 p-5">
       <div className="flex items-center justify-between mb-3">

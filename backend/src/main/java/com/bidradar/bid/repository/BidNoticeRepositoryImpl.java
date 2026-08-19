@@ -46,6 +46,7 @@ public class BidNoticeRepositoryImpl implements BidNoticeRepositoryCustom {
                         bid.bidDeadline,
                         bid.publishedAt,
                         Projections.constructor(MatchResultSummaryResponse.class,
+                                matchResult.status,
                                 matchResult.totalScore,
                                 matchResult.grade
                         )

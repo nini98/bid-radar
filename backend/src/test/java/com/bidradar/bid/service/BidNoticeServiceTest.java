@@ -11,6 +11,7 @@ import com.bidradar.bid.service.command.BidNoticeCreateCommand;
 import com.bidradar.company.domain.Company;
 import com.bidradar.company.repository.CompanyRepository;
 import com.bidradar.match.domain.BidMatchResult;
+import com.bidradar.match.domain.BidMatchResultStatus;
 import com.bidradar.match.domain.MatchGrade;
 import com.bidradar.match.repository.BidMatchResultRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -133,17 +134,17 @@ class BidNoticeServiceTest {
 
         // then
         assertThat(result.matchResult()).isNotNull();
+        assertThat(result.matchResult().status()).isEqualTo(BidMatchResultStatus.SUCCESS);
         assertThat(result.matchResult().totalScore()).isEqualByComparingTo("85.00");
         assertThat(result.matchResult().grade()).isEqualTo(MatchGrade.STRONG_REVIEW);
         assertThat(result.matchResult().displayText()).isEqualTo("적극 검토");
     }
 
     @Test
-    @DisplayName("매치 결과가 FAILED면 상세 조회 시 matchResult가 null로 숨겨진다")
-    void 매치결과가_FAILED면_상세조회시_matchResult가_null이다() {
-        // given: FAILED 결과를 그대로 내려보내면 점수 필드가 전부 null인 응답이 되어
-        // 기존 응답 계약(matchResult가 있으면 점수도 있음)을 깬다 (Codex 리뷰, Issue #40).
-        // 실패 상태를 실제로 노출하는 건 별도 Task 몫이라 지금은 "미계산"과 동일하게 숨긴다.
+    @DisplayName("매치 결과가 FAILED면 상세 조회 시 status=FAILED로 그대로 노출된다")
+    void 매치결과가_FAILED면_상세조회시_FAILED가_노출된다() {
+        // given: 응답 계약에 status가 추가되면서(Issue #40 프론트 노출 Task), FAILED 결과를
+        // 더 이상 숨기지 않고 그대로 내려보낸다. 점수 필드는 FAILED일 때 전부 null이다.
         Long bidId = 1L;
         ReflectionTestUtils.setField(company, "id", 10L);
         BidMatchResult failedResult = BidMatchResult.createFailed(notice, company, "RuntimeException: 계산 중 오류");
@@ -156,6 +157,9 @@ class BidNoticeServiceTest {
         BidNoticeDetailResponse result = service.getDetail(bidId, userId);
 
         // then
-        assertThat(result.matchResult()).isNull();
+        assertThat(result.matchResult()).isNotNull();
+        assertThat(result.matchResult().status()).isEqualTo(BidMatchResultStatus.FAILED);
+        assertThat(result.matchResult().totalScore()).isNull();
+        assertThat(result.matchResult().grade()).isNull();
     }
 }
