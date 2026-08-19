@@ -67,22 +67,32 @@ public class BidMatchEventListener {
         }
     }
 
+    /**
+     * 이 메서드는 AFTER_COMMIT 콜백 스레드에서 동기 실행된다({@code process()}처럼 비동기 풀
+     * 스레드가 아님) — 여기서 던진 예외는 이 리스너를 호출한 원래 트랜잭션 스레드(공고 수집기
+     * 등)로 그대로 전파된다. 그래서 공고/회사 조회 자체가 실패하는 경우까지 전체를 try-catch로
+     * 감싸 흡수한다 (Codex 리뷰, Issue #51).
+     */
     private void recordRejectionFailure(Long bidNoticeId, Exception rejection) {
-        BidNotice bid = bidNoticeRepository.findById(bidNoticeId).orElse(null);
-        if (bid == null) {
-            log.warn("매칭 계산 대상 공고를 찾을 수 없음: bidNoticeId={}", bidNoticeId);
-            return;
-        }
-
-        List<Company> companies = companyRepository.findAll();
-        for (Company company : companies) {
-            try {
-                // AFTER_COMMIT 콜백 스레드에서 직접 호출되므로 REQUIRES_NEW가 필요하다 (클래스 상단 Javadoc 참고).
-                matchCalculationService.markFailedInNewTransaction(bid, company, buildErrorMessage(rejection));
-            } catch (Exception saveException) {
-                log.error("제출 거부 실패 상태 저장도 실패: bidNoticeId={}, companyId={}",
-                        bid.getId(), company.getId(), saveException);
+        try {
+            BidNotice bid = bidNoticeRepository.findById(bidNoticeId).orElse(null);
+            if (bid == null) {
+                log.warn("매칭 계산 대상 공고를 찾을 수 없음: bidNoticeId={}", bidNoticeId);
+                return;
             }
+
+            List<Company> companies = companyRepository.findAll();
+            for (Company company : companies) {
+                try {
+                    // AFTER_COMMIT 콜백 스레드에서 직접 호출되므로 REQUIRES_NEW가 필요하다 (클래스 상단 Javadoc 참고).
+                    matchCalculationService.markFailedInNewTransaction(bid, company, buildErrorMessage(rejection));
+                } catch (Exception saveException) {
+                    log.error("제출 거부 실패 상태 저장도 실패: bidNoticeId={}, companyId={}",
+                            bid.getId(), company.getId(), saveException);
+                }
+            }
+        } catch (Exception e) {
+            log.error("제출 거부 후처리 중 공고/회사 조회 실패: bidNoticeId={}", bidNoticeId, e);
         }
     }
 

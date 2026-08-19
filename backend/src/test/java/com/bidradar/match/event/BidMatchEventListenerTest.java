@@ -21,6 +21,7 @@ import org.springframework.core.task.TaskRejectedException;
 import java.util.List;
 import java.util.Optional;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -154,5 +155,31 @@ class BidMatchEventListenerTest {
 
         // then
         verify(matchCalculationService).markFailedInNewTransaction(eq(bid), eq(companyB), any());
+    }
+
+    @Test
+    @DisplayName("제출 거부 처리 중 공고 재조회 자체가 예외를 던져도 예외가 전파되지 않는다")
+    void 제출거부시_공고재조회가_예외를던져도_예외가_전파되지않는다() {
+        // given
+        doThrow(new TaskRejectedException("풀 포화")).when(matchTaskExecutor).execute(any());
+        given(bidNoticeRepository.findById(1L)).willThrow(new RuntimeException("DB 오류"));
+
+        // when & then: handle()이 AFTER_COMMIT 콜백 스레드에서 동기 실행되므로, 여기서 예외가
+        // 새면 원래 트랜잭션을 커밋한 호출자(공고 수집기 등)로 그대로 전파된다.
+        assertThatCode(() -> listener.handle(new BidNoticeCollectedEvent(1L)))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("제출 거부 처리 중 회사 목록 조회 자체가 예외를 던져도 예외가 전파되지 않는다")
+    void 제출거부시_회사목록조회가_예외를던져도_예외가_전파되지않는다() {
+        // given
+        doThrow(new TaskRejectedException("풀 포화")).when(matchTaskExecutor).execute(any());
+        given(bidNoticeRepository.findById(1L)).willReturn(Optional.of(bid));
+        given(companyRepository.findAll()).willThrow(new RuntimeException("DB 오류"));
+
+        // when & then
+        assertThatCode(() -> listener.handle(new BidNoticeCollectedEvent(1L)))
+                .doesNotThrowAnyException();
     }
 }
