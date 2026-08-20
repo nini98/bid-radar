@@ -88,7 +88,7 @@ class BudgetRangeRuleTest {
     private BidNotice bidNotice(Long budget) {
         return BidNotice.create(new BidNoticeCreateCommand(
                 "EXT-1", "G2B", "테스트 공고", null, budget, null, null, null, null, null,
-                null, null, null, null, null));
+                null, null, null, null, null, null));
     }
 
     private CompanyProfileContext profile(Long budgetMin, Long budgetMax) {

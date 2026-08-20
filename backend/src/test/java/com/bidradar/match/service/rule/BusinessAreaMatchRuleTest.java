@@ -5,7 +5,6 @@ import com.bidradar.bid.service.command.BidNoticeCreateCommand;
 import com.bidradar.match.service.CompanyProfileContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
 import java.util.Set;
@@ -46,11 +45,9 @@ class BusinessAreaMatchRuleTest {
     }
 
     private BidNotice bidNotice(String title, String qualificationSummary) {
-        BidNotice notice = BidNotice.create(new BidNoticeCreateCommand(
+        return BidNotice.create(new BidNoticeCreateCommand(
                 "EXT-1", "G2B", title, null, null, null, null, null, null, null,
-                null, null, null, null, null));
-        ReflectionTestUtils.setField(notice, "qualificationSummary", qualificationSummary);
-        return notice;
+                null, null, null, null, null, qualificationSummary));
     }
 
     private CompanyProfileContext profile(Set<String> businessAreaNames) {

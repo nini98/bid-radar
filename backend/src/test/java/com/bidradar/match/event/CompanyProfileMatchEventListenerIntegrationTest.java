@@ -136,7 +136,7 @@ class CompanyProfileMatchEventListenerIntegrationTest extends IntegrationTestBas
         createdUserIds.add(user.getId());
         BidNotice bidNotice = bidNoticeRepository.save(BidNotice.create(new BidNoticeCreateCommand(
                 "COMMIT-TEST-" + System.nanoTime(), "G2B", "테스트 공고", null, null, null, null, null, null, null,
-                null, null, null, null, null)));
+                null, null, null, null, null, null)));
         createdBidNoticeIds.add(bidNotice.getId());
         CompanyProfileRequest request = emptyRequest("커밋테스트회사");
 

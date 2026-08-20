@@ -74,7 +74,7 @@ class BidTypeRuleTest {
     private BidNotice bidNotice(String bidType, String contractType) {
         return BidNotice.create(new BidNoticeCreateCommand(
                 "EXT-1", "G2B", "테스트 공고", null, null, null, bidType, contractType, null, null,
-                null, null, null, null, null));
+                null, null, null, null, null, null));
     }
 
     private CompanyProfileContext profile(List<String> preferredBidTypes, List<String> preferredContractTypes) {

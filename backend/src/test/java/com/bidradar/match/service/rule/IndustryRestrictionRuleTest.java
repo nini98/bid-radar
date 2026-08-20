@@ -59,6 +59,6 @@ class IndustryRestrictionRuleTest {
     private BidNotice bidNotice(String industryRestriction) {
         return BidNotice.create(new BidNoticeCreateCommand(
                 "EXT-1", "G2B", "테스트 공고", null, null, null, null, null, industryRestriction, null,
-                null, null, null, null, null));
+                null, null, null, null, null, null));
     }
 }

@@ -39,5 +39,8 @@ public record G2bNoticeItem(
         String ntceSpecFileNm7,
         String ntceSpecFileNm8,
         String ntceSpecFileNm9,
-        String ntceSpecFileNm10
+        String ntceSpecFileNm10,
+        String mainCnsttyNm,
+        String pubPrcrmntClsfcNm,
+        String dtilPrdctClsfcNoNm
 ) {}

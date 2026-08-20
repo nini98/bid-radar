@@ -33,7 +33,7 @@ class MatchCalculationStatusCoordinatorTest {
     private final Company company = Company.create(User.create("owner@bidradar.com", "hash", "홍길동"), "테스트 회사");
     private final BidNotice bid = BidNotice.create(new BidNoticeCreateCommand(
             "EXT-1", "G2B", "공고 A", null, null, null, null, null, null, null,
-            null, null, null, null, null));
+            null, null, null, null, null, null));
 
     @Test
     @DisplayName("토큰이 유효하면 결과를 저장하고 true를 반환한다")

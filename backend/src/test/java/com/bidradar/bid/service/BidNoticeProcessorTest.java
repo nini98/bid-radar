@@ -126,7 +126,8 @@ class BidNoticeProcessorTest extends IntegrationTestBase {
                 null, null, null, null, null,
                 null, null, null, null, null,
                 null, null, null, null, null,
-                null, null, null, null, null
+                null, null, null, null, null,
+                null, null, null
         );
     }
 
@@ -139,7 +140,8 @@ class BidNoticeProcessorTest extends IntegrationTestBase {
                 "https://www.g2b.go.kr/file1.pdf",
                 null, null, null, null, null, null, null, null, null,
                 "입찰공고문.pdf",
-                null, null, null, null, null, null, null, null, null
+                null, null, null, null, null, null, null, null, null,
+                null, null, null
         );
     }
 }

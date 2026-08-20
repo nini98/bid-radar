@@ -100,6 +100,7 @@ public class BidNotice extends BaseEntity {
         notice.bidType = cmd.bidType();
         notice.contractType = cmd.contractType();
         notice.industryRestriction = cmd.industryRestriction();
+        notice.qualificationSummary = cmd.qualificationSummary();
         notice.noticeUrl = cmd.noticeUrl();
         notice.publishedAt = cmd.publishedAt();
         notice.documentDeadline = cmd.documentDeadline();

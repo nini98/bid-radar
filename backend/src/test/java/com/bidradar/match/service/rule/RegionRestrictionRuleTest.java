@@ -61,7 +61,7 @@ class RegionRestrictionRuleTest {
     private BidNotice bidNotice(String regionRestriction) {
         BidNotice notice = BidNotice.create(new BidNoticeCreateCommand(
                 "EXT-1", "G2B", "테스트 공고", null, null, null, null, null, null, null,
-                null, null, null, null, null));
+                null, null, null, null, null, null));
         ReflectionTestUtils.setField(notice, "regionRestriction", regionRestriction);
         return notice;
     }

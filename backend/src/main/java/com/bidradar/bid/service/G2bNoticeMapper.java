@@ -7,6 +7,7 @@ import com.bidradar.bid.service.command.BidNoticeCreateCommand;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -15,6 +16,7 @@ import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class G2bNoticeMapper {
@@ -40,8 +42,32 @@ public class G2bNoticeMapper {
                 parseDateTime(item.bidQlfctRgstDt()),
                 parseDateTime(item.bidClseDt()),
                 parseDateTime(item.opengDt()),
-                toJson(item)
+                toJson(item),
+                resolveQualificationSummary(item)
         );
+    }
+
+    /**
+     * 건설(mainCnsttyNm)/용역(pubPrcrmntClsfcNm)/물품(dtilPrdctClsfcNoNm) 목록 API는
+     * 서로 다른 분류 필드를 응답에 담아 보내고, 자기 유형이 아닌 필드는 응답 자체에 없어
+     * 자동으로 null이 된다. 어떤 오퍼레이션에서 온 아이템인지 별도로 추적하지 않고도
+     * 이 중 채워진 값 하나를 그대로 채택한다.
+     */
+    private String resolveQualificationSummary(G2bNoticeItem item) {
+        String[] candidates = {item.mainCnsttyNm(), item.pubPrcrmntClsfcNm(), item.dtilPrdctClsfcNoNm()};
+        String resolved = null;
+        int nonNullCount = 0;
+        for (String candidate : candidates) {
+            if (candidate != null && !candidate.isBlank()) {
+                nonNullCount++;
+                if (resolved == null) resolved = candidate;
+            }
+        }
+        if (nonNullCount > 1) {
+            log.warn("공고 분류 필드가 2개 이상 동시에 존재: bidNtceNo={}, mainCnsttyNm={}, pubPrcrmntClsfcNm={}, dtilPrdctClsfcNoNm={}",
+                    item.bidNtceNo(), item.mainCnsttyNm(), item.pubPrcrmntClsfcNm(), item.dtilPrdctClsfcNoNm());
+        }
+        return resolved;
     }
 
     public List<BidAttachment> toAttachments(G2bNoticeItem item, BidNotice notice) {
