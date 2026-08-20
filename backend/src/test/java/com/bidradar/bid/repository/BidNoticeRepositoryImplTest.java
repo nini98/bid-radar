@@ -248,7 +248,7 @@ class BidNoticeRepositoryImplTest extends IntegrationTestBase {
         return BidNotice.create(new BidNoticeCreateCommand(
                 externalNoticeId, "G2B", "테스트 공고 " + externalNoticeId, "국토교통부",
                 50_000_000L, "서울특별시", "일반경쟁", "일반계약", null, null,
-                publishedAt, null, LocalDateTime.now().plusDays(10), null, null));
+                publishedAt, null, LocalDateTime.now().plusDays(10), null, null, null));
     }
 
     private Company createCompany(String email) {

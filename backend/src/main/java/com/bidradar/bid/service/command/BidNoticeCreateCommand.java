@@ -17,5 +17,6 @@ public record BidNoticeCreateCommand(
         LocalDateTime documentDeadline,
         LocalDateTime bidDeadline,
         LocalDateTime openAt,
-        String rawData
+        String rawData,
+        String qualificationSummary
 ) {}

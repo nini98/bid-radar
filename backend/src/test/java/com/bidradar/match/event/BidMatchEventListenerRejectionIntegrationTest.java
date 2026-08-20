@@ -91,7 +91,7 @@ class BidMatchEventListenerRejectionIntegrationTest extends IntegrationTestBase 
     private BidNotice saveBidNotice(String externalId) {
         BidNotice notice = bidNoticeRepository.save(BidNotice.create(new BidNoticeCreateCommand(
                 externalId, "G2B", "테스트 공고", null, null, null, null, null, null, null,
-                null, null, null, null, null)));
+                null, null, null, null, null, null)));
         createdBidNoticeIds.add(notice.getId());
         return notice;
     }

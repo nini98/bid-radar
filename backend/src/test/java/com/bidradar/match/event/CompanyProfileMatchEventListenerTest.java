@@ -49,10 +49,10 @@ class CompanyProfileMatchEventListenerTest {
     private final Company company = Company.create(User.create("owner@bidradar.com", "hash", "홍길동"), "테스트 회사");
     private final BidNotice bidA = BidNotice.create(new BidNoticeCreateCommand(
             "EXT-1", "G2B", "공고 A", null, null, null, null, null, null, null,
-            null, null, null, null, null));
+            null, null, null, null, null, null));
     private final BidNotice bidB = BidNotice.create(new BidNoticeCreateCommand(
             "EXT-2", "G2B", "공고 B", null, null, null, null, null, null, null,
-            null, null, null, null, null));
+            null, null, null, null, null, null));
 
     @BeforeEach
     void setUp() {

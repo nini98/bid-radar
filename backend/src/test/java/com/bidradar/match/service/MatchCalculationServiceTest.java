@@ -47,7 +47,7 @@ class MatchCalculationServiceTest {
 
     private final BidNotice bid = BidNotice.create(new BidNoticeCreateCommand(
             "EXT-1", "G2B", "테스트 공고", null, null, null, null, null, null, null,
-            null, null, null, null, null));
+            null, null, null, null, null, null));
     private final Company company = Company.create(User.create("owner@bidradar.com", "hash", "홍길동"), "테스트 회사");
 
     private final MatchCalculationResult calculationResult = new MatchCalculationResult(

@@ -74,7 +74,7 @@ class RegionMatchRuleTest {
     private BidNotice bidNotice(String region) {
         return BidNotice.create(new BidNoticeCreateCommand(
                 "EXT-1", "G2B", "테스트 공고", null, null, region, null, null, null, null,
-                null, null, null, null, null));
+                null, null, null, null, null, null));
     }
 
     private CompanyProfileContext profile(List<String> preferredRegions) {

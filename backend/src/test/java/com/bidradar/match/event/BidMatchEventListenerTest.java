@@ -48,7 +48,7 @@ class BidMatchEventListenerTest {
 
     private final BidNotice bid = BidNotice.create(new BidNoticeCreateCommand(
             "EXT-1", "G2B", "테스트 공고", null, null, null, null, null, null, null,
-            null, null, null, null, null));
+            null, null, null, null, null, null));
     private final Company companyA = Company.create(User.create("a@bidradar.com", "hash", "회사A"), "회사A");
     private final Company companyB = Company.create(User.create("b@bidradar.com", "hash", "회사B"), "회사B");
 

@@ -206,7 +206,7 @@ class MatchingEngineTest {
     private BidNotice bid() {
         return BidNotice.create(new BidNoticeCreateCommand(
                 "EXT-1", "G2B", "테스트 공고", null, null, null, null, null, null, null,
-                null, null, null, null, null));
+                null, null, null, null, null, null));
     }
 
     private CompanyProfileContext profile() {

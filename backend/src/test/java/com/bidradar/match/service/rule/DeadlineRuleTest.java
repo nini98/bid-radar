@@ -94,7 +94,7 @@ class DeadlineRuleTest {
     private BidNotice bidNotice(LocalDateTime bidDeadline) {
         return BidNotice.create(new BidNoticeCreateCommand(
                 "EXT-1", "G2B", "테스트 공고", null, null, null, null, null, null, null,
-                null, null, bidDeadline, null, null));
+                null, null, bidDeadline, null, null, null));
     }
 
     private CompanyProfileContext profile(Integer deadlineMinDays) {
